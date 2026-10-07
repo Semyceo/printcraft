@@ -24,16 +24,17 @@ enum RowAction {
 }
 
 pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (bool, bool) {
-    ui.label(egui::RichText::new("Combine files").font(theme::semibold(18.0)));
+    let lang = app.language;
+    ui.label(egui::RichText::new(lang.tr("Combine files")).font(theme::semibold(18.0)));
     ui.add_space(4.0);
-    ui.label(egui::RichText::new("Files are combined in this order. Leave Pages empty to take every page.").small().color(t.text_faint));
+    ui.label(egui::RichText::new(lang.tr("Files are combined in this order. Leave Pages empty to take every page.")).small().color(t.text_faint));
     ui.add_space(8.0);
     let mut action = None;
     let n = app.combine_draft.len();
     egui::ScrollArea::vertical().max_height(360.0).auto_shrink([false, true]).show(ui, |ui| {
         egui::Grid::new("combine-files").num_columns(4).min_col_width(40.0).spacing([10.0, 6.0]).striped(true).show(ui, |ui| {
-            ui.label(egui::RichText::new("File").color(t.text_muted));
-            ui.label(egui::RichText::new("Pages").color(t.text_muted));
+            ui.label(egui::RichText::new(lang.tr("File")).color(t.text_muted));
+            ui.label(egui::RichText::new(lang.tr("Pages")).color(t.text_muted));
             ui.label("");
             ui.label("");
             ui.end_row();
@@ -41,19 +42,36 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                 ui.horizontal(|ui| {
                     ui.add(icons::image("file-text", 16.0, t.icon));
                     ui.add(egui::Label::new(&f.name).truncate());
-                    ui.label(egui::RichText::new(format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" })).small().color(t.text_faint));
+                    let p_text = if lang == crate::i18n::Language::Fr {
+                        format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" })
+                    } else {
+                        format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" })
+                    };
+                    ui.label(egui::RichText::new(p_text).small().color(t.text_faint));
                 });
-                ui.add_sized([120.0, 22.0], egui::TextEdit::singleline(&mut f.range).hint_text("All pages"))
-                    .on_hover_text(format!("Pages of {} to combine, e.g. 1-3, 6", f.name));
+                let hover_txt = if lang == crate::i18n::Language::Fr {
+                    format!("Pages de {} à combiner, ex. 1-3, 6", f.name)
+                } else {
+                    format!("Pages of {} to combine, e.g. 1-3, 6", f.name)
+                };
+                ui.add_sized([120.0, 22.0], egui::TextEdit::singleline(&mut f.range).hint_text(lang.tr("All pages")))
+                    .on_hover_text(hover_txt);
                 ui.horizontal(|ui| {
-                    if ui.add_enabled_ui(i > 0, |ui| icons::button(ui, "chevron-up", 24.0, false, "Move up")).inner.clicked() {
+                    let up_tip = lang.tr("Move up");
+                    if ui.add_enabled_ui(i > 0, |ui| icons::button(ui, "chevron-up", 24.0, false, &up_tip)).inner.clicked() {
                         action = Some(RowAction::Up(i));
                     }
-                    if ui.add_enabled_ui(i + 1 < n, |ui| icons::button(ui, "chevron-down", 24.0, false, "Move down")).inner.clicked() {
+                    let down_tip = lang.tr("Move down");
+                    if ui.add_enabled_ui(i + 1 < n, |ui| icons::button(ui, "chevron-down", 24.0, false, &down_tip)).inner.clicked() {
                         action = Some(RowAction::Down(i));
                     }
                 });
-                if icons::button(ui, "trash-2", 24.0, false, &format!("Remove {}", f.name)).clicked() {
+                let rm_tip = if lang == crate::i18n::Language::Fr {
+                    format!("Supprimer {}", f.name)
+                } else {
+                    format!("Remove {}", f.name)
+                };
+                if icons::button(ui, "trash-2", 24.0, false, &rm_tip).clicked() {
                     action = Some(RowAction::Remove(i));
                 }
                 ui.end_row();
@@ -71,16 +89,21 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     ui.add_space(10.0);
     let (mut go, mut cancel) = (false, false);
     ui.horizontal(|ui| {
-        if widgets::pill_button(ui, "Add files…", false).clicked() {
+        if widgets::pill_button(ui, &lang.tr("Add files…"), false).clicked() {
             app.combine_dialog();
         }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             let ok = app.combine_draft.len() >= 2;
-            if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, "Combine", true)).inner.on_disabled_hover_text("Add at least two files").clicked()
+            let dis_tip = if lang == crate::i18n::Language::Fr {
+                "Ajoutez au moins deux fichiers"
+            } else {
+                "Add at least two files"
+            };
+            if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Combine"), true)).inner.on_disabled_hover_text(dis_tip).clicked()
             {
                 go = true;
             }
-            if widgets::pill_button(ui, "Cancel", false).clicked() {
+            if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
                 cancel = true;
             }
         });

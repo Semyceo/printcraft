@@ -10,13 +10,13 @@ use crate::theme::{self, Tokens};
 /// Glyphs of context shown on each side of a match.
 const CONTEXT: usize = 36;
 
-pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, view: &mut DocView, pages: usize) {
+pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, view: &mut DocView, pages: usize, lang: crate::i18n::Language) {
     let searched = view.texts.len() + view.text_failed.len();
     let Some(find) = view.find.as_mut() else { return };
     find.in_panel = true;
-    let l = ui.label(egui::RichText::new("What word or phrase would you like to search for?").color(t.text_muted));
+    let l = ui.label(egui::RichText::new(lang.tr("What word or phrase would you like to search for?")).color(t.text_muted));
     let r = ui
-        .add(egui::TextEdit::singleline(&mut find.query).id(egui::Id::new("search-panel-input")).hint_text("Search").desired_width(f32::INFINITY))
+        .add(egui::TextEdit::singleline(&mut find.query).id(egui::Id::new("search-panel-input")).hint_text(lang.tr("Search")).desired_width(f32::INFINITY))
         .labelled_by(l.id);
     if find.focus {
         r.request_focus();
@@ -27,8 +27,8 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, view: &mut DocView, pages: us
         let w = &mut ui.visuals_mut().widgets;
         w.inactive.bg_stroke = egui::Stroke::new(1.0, t.border);
         w.inactive.bg_fill = t.hover;
-        let a = ui.checkbox(&mut find.whole_words, "Whole words only").changed();
-        let b = ui.checkbox(&mut find.case_sensitive, "Case-sensitive").changed();
+        let a = ui.checkbox(&mut find.whole_words, lang.tr("Whole words only")).changed();
+        let b = ui.checkbox(&mut find.case_sensitive, lang.tr("Case-sensitive")).changed();
         if a || b {
             find.case_query.clear();
         }
@@ -41,11 +41,27 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, view: &mut DocView, pages: us
     let status = if find.query.trim().is_empty() {
         String::new()
     } else if find.matches.is_empty() && searched < pages {
-        format!("Searching… {searched} of {pages} pages")
+        if lang == crate::i18n::Language::Fr {
+            format!("Recherche en cours… {searched} sur {pages} pages")
+        } else {
+            format!("Searching… {searched} of {pages} pages")
+        }
     } else {
         let n = find.matches.len();
-        let more = if searched < pages { format!(" (searching… {searched} of {pages} pages)") } else { String::new() };
-        format!("{n} instance{}{more}", if n == 1 { "" } else { "s" })
+        let more = if searched < pages {
+            if lang == crate::i18n::Language::Fr {
+                format!(" (recherche… {searched} sur {pages} pages)")
+            } else {
+                format!(" (searching… {searched} of {pages} pages)")
+            }
+        } else {
+            String::new()
+        };
+        if lang == crate::i18n::Language::Fr {
+            format!("{n} occurrence{}{more}", if n == 1 { "" } else { "s" })
+        } else {
+            format!("{n} instance{}{more}", if n == 1 { "" } else { "s" })
+        }
     };
     ui.label(egui::RichText::new(status).font(theme::semibold(12.5)));
     ui.add_space(4.0);
@@ -54,7 +70,7 @@ pub(crate) fn panel(ui: &mut egui::Ui, t: &Tokens, view: &mut DocView, pages: us
     for (i, (p, range)) in find.matches.iter().enumerate().take(2000) {
         if last_page != Some(*p) {
             ui.add_space(4.0);
-            ui.label(egui::RichText::new(format!("Page {}", p + 1)).small().color(t.text_faint));
+            ui.label(egui::RichText::new(format!("{} {}", lang.tr("Page"), p + 1)).small().color(t.text_faint));
             last_page = Some(*p);
         }
         let Some(text) = view.texts.get(p) else { continue };

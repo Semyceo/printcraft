@@ -40,19 +40,20 @@ pub type ExportStatus = Arc<Mutex<Option<(usize, usize, Option<String>)>>>;
 
 pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind: ExportKind) -> (bool, bool) {
     let count = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.info.pages.len()).unwrap_or(0);
+    let lang = app.language;
     let d = &mut app.export_draft;
     ui.label(
         egui::RichText::new(match kind {
-            ExportKind::Image => "Export to Image",
-            ExportKind::Text => "Export to Text",
-            ExportKind::AllImages => "Export All Images",
+            ExportKind::Image => lang.tr("Export to Image"),
+            ExportKind::Text => lang.tr("Export to Text"),
+            ExportKind::AllImages => lang.tr("Export All Images"),
         })
         .font(theme::semibold(18.0)),
     );
     ui.add_space(8.0);
     if kind == ExportKind::Image {
         ui.horizontal(|ui| {
-            ui.label("Resolution");
+            ui.label(lang.tr("Resolution"));
             egui::ComboBox::from_id_salt("export-dpi").selected_text(format!("{} pixels/inch", d.dpi)).show_ui(ui, |ui| {
                 for dpi in [72.0, 96.0, 150.0, 300.0, 600.0] {
                     ui.selectable_value(&mut d.dpi, dpi, format!("{dpi} pixels/inch"));
@@ -60,7 +61,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
             });
         });
         ui.horizontal(|ui| {
-            ui.label("Format");
+            ui.label(lang.tr("Format"));
             let mut quality = match d.format {
                 ImageFormat::Jpeg { quality } => quality,
                 _ => 85,
@@ -74,42 +75,61 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
                 }
             });
             if let ImageFormat::Jpeg { .. } = d.format {
-                ui.label("Quality");
+                ui.label(lang.tr("Quality"));
                 if ui.add(egui::Slider::new(&mut quality, 10..=100)).changed() {
                     d.format = ImageFormat::Jpeg { quality };
                 }
             }
         });
-        ui.label(egui::RichText::new(format!("One {} file per page, named after the document.", d.format.label())).small().color(t.text_faint));
+        let note = if lang == crate::i18n::Language::Fr {
+            format!("Un fichier {} par page, nommé d'après le document.", d.format.label())
+        } else {
+            format!("One {} file per page, named after the document.", d.format.label())
+        };
+        ui.label(egui::RichText::new(note).small().color(t.text_faint));
     } else if kind == ExportKind::AllImages {
         ui.horizontal(|ui| {
-            ui.label("Exclude images smaller than");
-            let label = |n: u32| if n == 0 { "No limit".to_string() } else { format!("{n} pixels") };
+            ui.label(lang.tr("Exclude images smaller than"));
+            let label = |n: u32| {
+                if n == 0 {
+                    lang.tr("No limit").to_string()
+                } else if lang == crate::i18n::Language::Fr {
+                    format!("{n} pixels")
+                } else {
+                    format!("{n} pixels")
+                }
+            };
             egui::ComboBox::from_id_salt("export-min").selected_text(label(d.min_side)).show_ui(ui, |ui| {
                 for n in [0, 16, 32, 64, 128, 256] {
                     ui.selectable_value(&mut d.min_side, n, label(n));
                 }
             });
         });
-        ui.label(
-            egui::RichText::new("Each image once, named after the document and page. JPEG images are saved unchanged; others as PNG.")
-                .small()
-                .color(t.text_faint),
-        );
+        let note = if lang == crate::i18n::Language::Fr {
+            "Chaque image une seule fois, nommée d'après le document et la page. Les images JPEG sont enregistrées à l'identique ; les autres en PNG."
+        } else {
+            "Each image once, named after the document and page. JPEG images are saved unchanged; others as PNG."
+        };
+        ui.label(egui::RichText::new(note).small().color(t.text_faint));
     } else {
-        ui.label(egui::RichText::new("Plain text in reading order; pages are separated by form feeds.").small().color(t.text_faint));
+        let note = if lang == crate::i18n::Language::Fr {
+            "Texte brut dans l'ordre de lecture ; les pages sont séparées par des sauts de page."
+        } else {
+            "Plain text in reading order; pages are separated by form feeds."
+        };
+        ui.label(egui::RichText::new(note).small().color(t.text_faint));
     }
     ui.add_space(6.0);
-    ui.label(egui::RichText::new("Pages").font(theme::semibold(12.5)));
-    d.range.ui(ui, count);
+    ui.label(egui::RichText::new(lang.tr("Pages")).font(theme::semibold(12.5)));
+    d.range.ui(ui, count, lang);
     ui.add_space(12.0);
     let (mut apply, mut cancel) = (false, false);
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let ok = !d.range.pages(count).is_empty();
-        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, "Export", true)).inner.clicked() {
+        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Export"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, "Cancel", false).clicked() {
+        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

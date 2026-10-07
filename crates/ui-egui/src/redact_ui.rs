@@ -201,35 +201,40 @@ impl PrintCraftApp {
 }
 
 /// Redact pages ("Mark Page Range"). Returns (apply, cancel).
-pub(crate) fn pages_body(ui: &mut egui::Ui, d: &mut PagesDraft, pages: usize, _t: &Tokens) -> (bool, bool) {
-    ui.label(egui::RichText::new("Mark Page Range").font(crate::theme::semibold(18.0)));
+pub(crate) fn pages_body(ui: &mut egui::Ui, d: &mut PagesDraft, pages: usize, _t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
+    ui.label(egui::RichText::new(lang.tr("Mark Page Range")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
-    ui.radio_value(&mut d.current, true, "Current page");
+    ui.radio_value(&mut d.current, true, lang.tr("Current page"));
     ui.horizontal(|ui| {
-        ui.radio_value(&mut d.current, false, "Pages from");
+        ui.radio_value(&mut d.current, false, lang.tr("Pages from"));
         ui.add_enabled(!d.current, egui::DragValue::new(&mut d.from).range(1..=pages));
-        ui.label("to");
+        ui.label(lang.tr("to"));
         ui.add_enabled(!d.current, egui::DragValue::new(&mut d.to).range(1..=pages));
-        ui.label(format!("of {pages}"));
+        let of_label = if lang == crate::i18n::Language::Fr {
+            format!("sur {pages}")
+        } else {
+            format!("of {pages}")
+        };
+        ui.label(of_label);
     });
     d.to = d.to.max(d.from);
     ui.add_space(12.0);
-    buttons(ui, "OK", true)
+    buttons(ui, &lang.tr("OK"), true, lang)
 }
 
 /// Find text and redact. Returns (search, cancel).
-pub(crate) fn search_body(ui: &mut egui::Ui, d: &mut SearchDraft, t: &Tokens) -> (bool, bool) {
+pub(crate) fn search_body(ui: &mut egui::Ui, d: &mut SearchDraft, t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
     ui.set_width(420.0);
-    ui.label(egui::RichText::new("Find text and redact").font(crate::theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Find text and redact")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
-    ui.radio_value(&mut d.patterns, false, "Single word or phrase");
+    ui.radio_value(&mut d.patterns, false, lang.tr("Single word or phrase"));
     let mut enter = false;
     ui.add_enabled_ui(!d.patterns, |ui| {
-        let r = ui.add(egui::TextEdit::singleline(&mut d.text).hint_text("Text to find").desired_width(380.0));
+        let r = ui.add(egui::TextEdit::singleline(&mut d.text).hint_text(lang.tr("Text to find")).desired_width(380.0));
         enter = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
     });
     ui.add_space(6.0);
-    ui.radio_value(&mut d.patterns, true, "Patterns");
+    ui.radio_value(&mut d.patterns, true, lang.tr("Patterns"));
     ui.add_enabled_ui(d.patterns, |ui| {
         egui::ComboBox::from_id_salt("redact-pattern").selected_text(d.pattern.label()).width(240.0).show_ui(ui, |ui| {
             for p in REDACT_PATTERNS {
@@ -238,27 +243,47 @@ pub(crate) fn search_body(ui: &mut egui::Ui, d: &mut SearchDraft, t: &Tokens) ->
         });
     });
     ui.add_space(6.0);
-    ui.label(egui::RichText::new("Text in images isn't found; recognise text (OCR) first.").small().color(t.text_faint));
+    let ocr_hint = if lang == crate::i18n::Language::Fr {
+        "Le texte des images n'est pas détecté ; effectuez d'abord une reconnaissance de texte (OCR)."
+    } else {
+        "Text in images isn't found; recognise text (OCR) first."
+    };
+    ui.label(egui::RichText::new(ocr_hint).small().color(t.text_faint));
     if let Some(n) = d.found {
-        ui.label(
-            egui::RichText::new(if n == 0 { "No matches.".to_string() } else { format!("{n} match(es) marked for redaction.") }).color(t.text_muted),
-        );
+        let match_msg = if n == 0 {
+            lang.tr("No matches.").to_string()
+        } else if lang == crate::i18n::Language::Fr {
+            format!("{n} correspondance(s) marquée(s) pour la biffure.")
+        } else {
+            format!("{n} match(es) marked for redaction.")
+        };
+        ui.label(egui::RichText::new(match_msg).color(t.text_muted));
     }
     ui.add_space(12.0);
-    let (go, cancel) = buttons(ui, "Mark all", true);
+    let (go, cancel) = buttons(ui, &lang.tr("Mark all"), true, lang);
     (go || enter, cancel)
 }
 
 /// Redaction Tool Properties. Returns (apply, cancel).
-pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens) -> (bool, bool) {
+pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
     ui.set_width(380.0);
-    ui.label(egui::RichText::new("Redaction Tool Properties").font(crate::theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Redaction Tool Properties")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
     egui::Grid::new("redact-props").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-        ui.label("Redacted area fill colour:");
+        let fill_col_label = if lang == crate::i18n::Language::Fr {
+            "Couleur de remplissage de la zone :"
+        } else {
+            "Redacted area fill colour:"
+        };
+        ui.label(fill_col_label);
         ui.horizontal(|ui| {
             let mut none = d.fill.is_none();
-            if ui.checkbox(&mut none, "No colour").changed() {
+            let no_col_label = if lang == crate::i18n::Language::Fr {
+                "Sans couleur"
+            } else {
+                "No colour"
+            };
+            if ui.checkbox(&mut none, no_col_label).changed() {
                 d.fill = if none { None } else { Some([0.0, 0.0, 0.0]) };
             }
         });
@@ -269,14 +294,19 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens) ->
         }
         ui.end_row();
         ui.label("");
-        ui.checkbox(&mut d.use_overlay, "Use overlay text");
+        let overlay_label = if lang == crate::i18n::Language::Fr {
+            "Utiliser un texte de superposition"
+        } else {
+            "Use overlay text"
+        };
+        ui.checkbox(&mut d.use_overlay, overlay_label);
         ui.end_row();
-        let l = ui.label("Custom text:");
+        let l = ui.label(lang.tr("Custom text:"));
         ui.add_enabled(d.use_overlay, egui::TextEdit::singleline(&mut d.overlay).desired_width(220.0)).labelled_by(l.id);
         ui.end_row();
         let on = d.use_overlay;
         let look = &mut d.look;
-        ui.label("Font:");
+        ui.label(lang.tr("Font:"));
         ui.add_enabled_ui(on, |ui| {
             egui::ComboBox::from_id_salt("overlay-font").selected_text(look.font.name()).show_ui(ui, |ui| {
                 for f in printcraft_engine::OverlayFont::ALL {
@@ -285,11 +315,16 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens) ->
             });
         });
         ui.end_row();
-        ui.label("Font size:");
+        ui.label(lang.tr("Font size:"));
         ui.add_enabled_ui(on, |ui| {
             ui.horizontal(|ui| {
                 let mut auto = look.size <= 0.0;
-                if ui.checkbox(&mut auto, "Auto-size text to fit redaction region").changed() {
+                let auto_label = if lang == crate::i18n::Language::Fr {
+                    "Adapter automatiquement à la zone de biffure"
+                } else {
+                    "Auto-size text to fit redaction region"
+                };
+                if ui.checkbox(&mut auto, auto_label).changed() {
                     look.size = if auto { 0.0 } else { 10.0 };
                 }
                 if !auto {
@@ -298,7 +333,12 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens) ->
             });
         });
         ui.end_row();
-        ui.label("Font colour:");
+        let font_col_label = if lang == crate::i18n::Language::Fr {
+            "Couleur de police :"
+        } else {
+            "Font colour:"
+        };
+        ui.label(font_col_label);
         ui.add_enabled_ui(on, |ui| {
             if let Some(c) = crate::comments::swatch_grid(ui, Some(look.color)) {
                 look.color = c;
@@ -306,48 +346,67 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens) ->
         });
         ui.end_row();
         ui.label("");
-        ui.add_enabled(on, egui::Checkbox::new(&mut look.repeat, "Repeat overlay text"));
+        let rep_label = if lang == crate::i18n::Language::Fr {
+            "Répéter le texte de superposition"
+        } else {
+            "Repeat overlay text"
+        };
+        ui.add_enabled(on, egui::Checkbox::new(&mut look.repeat, rep_label));
         ui.end_row();
-        ui.label("Text alignment:");
+        let align_label = if lang == crate::i18n::Language::Fr {
+            "Alignement du texte :"
+        } else {
+            "Text alignment:"
+        };
+        ui.label(align_label);
         ui.add_enabled_ui(on, |ui| {
             ui.horizontal(|ui| {
                 for (a, label) in [(0u8, "Left"), (1, "Center"), (2, "Right")] {
-                    ui.radio_value(&mut look.align, a, label);
+                    ui.radio_value(&mut look.align, a, lang.tr(label));
                 }
             });
         });
         ui.end_row();
     });
     ui.add_space(12.0);
-    buttons(ui, "OK", true)
+    buttons(ui, &lang.tr("OK"), true, lang)
 }
 
 /// Apply redactions confirmation. Returns (apply, cancel).
-pub(crate) fn apply_body(ui: &mut egui::Ui, marks: usize, t: &Tokens) -> (bool, bool) {
+pub(crate) fn apply_body(ui: &mut egui::Ui, marks: usize, t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
     ui.set_width(420.0);
-    ui.label(egui::RichText::new("Apply redactions").font(crate::theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Apply redactions")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
-    ui.label(format!(
-        "You are about to apply {marks} redaction mark{}. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.",
-        if marks == 1 { "" } else { "s" }
-    ));
+    let warn_text = if lang == crate::i18n::Language::Fr {
+        format!(
+            "Vous êtes sur le point d'appliquer {marks} marque{} de biffure. Le texte, les images et les tracés sous les marques, ainsi que les commentaires et formulaires qui les chevauchent, seront définitivement supprimés.",
+            if marks == 1 { "" } else { "s" }
+        )
+    } else {
+        format!(
+            "You are about to apply {marks} redaction mark{}. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.",
+            if marks == 1 { "" } else { "s" }
+        )
+    };
+    ui.label(warn_text);
     ui.add_space(4.0);
-    ui.label(
-        egui::RichText::new("Save the document afterwards: saving rewrites the whole file so no trace of the removed content stays in it.")
-            .small()
-            .color(t.text_muted),
-    );
+    let save_hint = if lang == crate::i18n::Language::Fr {
+        "Enregistrez le document ensuite : l'enregistrement réécrit l'intégralité du fichier pour qu'aucune trace du contenu supprimé ne subsiste."
+    } else {
+        "Save the document afterwards: saving rewrites the whole file so no trace of the removed content stays in it."
+    };
+    ui.label(egui::RichText::new(save_hint).small().color(t.text_muted));
     ui.add_space(12.0);
-    buttons(ui, "Apply", true)
+    buttons(ui, &lang.tr("Apply"), true, lang)
 }
 
-fn buttons(ui: &mut egui::Ui, ok: &str, primary: bool) -> (bool, bool) {
+fn buttons(ui: &mut egui::Ui, ok: &str, primary: bool, lang: crate::i18n::Language) -> (bool, bool) {
     let (mut a, mut c) = (false, false);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
         if widgets::pill_button(ui, ok, primary).clicked() {
             a = true;
         }
-        if widgets::pill_button(ui, "Cancel", false).clicked() {
+        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
             c = true;
         }
     });
@@ -371,35 +430,57 @@ impl PrintCraftApp {
 }
 
 /// Returns (remove, cancel).
-pub(crate) fn hidden_body(ui: &mut egui::Ui, d: &mut HiddenDraft, t: &Tokens) -> (bool, bool) {
+pub(crate) fn hidden_body(ui: &mut egui::Ui, d: &mut HiddenDraft, t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
     ui.set_width(440.0);
-    ui.label(egui::RichText::new("Remove hidden information").font(crate::theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Remove hidden information")).font(crate::theme::semibold(18.0)));
     ui.add_space(4.0);
-    ui.label(egui::RichText::new("Select the items to remove from this document.").color(t.text_muted));
+    let sel_hint = if lang == crate::i18n::Language::Fr {
+        "Sélectionnez les éléments à supprimer de ce document."
+    } else {
+        "Select the items to remove from this document."
+    };
+    ui.label(egui::RichText::new(sel_hint).color(t.text_muted));
     ui.add_space(8.0);
     let total: usize = d.found.iter().map(|f| f.1).sum();
     for (h, n, on) in d.found.iter_mut() {
         ui.add_enabled_ui(*n > 0, |ui| {
             ui.horizontal(|ui| {
-                ui.checkbox(on, h.label());
+                ui.checkbox(on, lang.tr(h.label()));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(egui::RichText::new(if *n == 0 { "None found".to_string() } else { n.to_string() }).color(t.text_muted));
+                    let count_str = if *n == 0 {
+                        if lang == crate::i18n::Language::Fr {
+                            "Aucun trouvé".to_string()
+                        } else {
+                            "None found".to_string()
+                        }
+                    } else {
+                        n.to_string()
+                    };
+                    ui.label(egui::RichText::new(count_str).color(t.text_muted));
                 });
             });
         });
     }
     ui.add_space(6.0);
-    ui.label(
-        egui::RichText::new("Form fields are flattened: their values stay visible. Saving rewrites the whole file.").small().color(t.text_faint),
-    );
+    let flat_hint = if lang == crate::i18n::Language::Fr {
+        "Les champs de formulaire sont aplatis : leurs valeurs restent visibles. L'enregistrement réécrit l'intégralité du fichier."
+    } else {
+        "Form fields are flattened: their values stay visible. Saving rewrites the whole file."
+    };
+    ui.label(egui::RichText::new(flat_hint).small().color(t.text_faint));
     ui.add_space(12.0);
     let any = d.found.iter().any(|f| f.2 && f.1 > 0);
     let (mut a, mut c) = (false, false);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        if ui.add_enabled_ui(any && total > 0, |ui| widgets::pill_button(ui, "Remove", true)).inner.clicked() {
+        let rem_label = if lang == crate::i18n::Language::Fr {
+            "Supprimer"
+        } else {
+            "Remove"
+        };
+        if ui.add_enabled_ui(any && total > 0, |ui| widgets::pill_button(ui, rem_label, true)).inner.clicked() {
             a = true;
         }
-        if widgets::pill_button(ui, "Cancel", false).clicked() {
+        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
             c = true;
         }
     });
@@ -407,17 +488,28 @@ pub(crate) fn hidden_body(ui: &mut egui::Ui, d: &mut HiddenDraft, t: &Tokens) ->
 }
 
 /// Sanitize Document confirmation. Returns (sanitize, cancel).
-pub(crate) fn sanitize_body(ui: &mut egui::Ui, t: &Tokens) -> (bool, bool) {
+pub(crate) fn sanitize_body(ui: &mut egui::Ui, t: &Tokens, lang: crate::i18n::Language) -> (bool, bool) {
     ui.set_width(440.0);
-    ui.label(egui::RichText::new("Sanitize document").font(crate::theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Sanitize document")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
-    ui.label("Sanitizing removes hidden information from the document: metadata, file attachments, comments, form fields (flattened), hidden text and layers, bookmarks, links, actions and scripts, and private application data.");
+    let sanitize_msg = if lang == crate::i18n::Language::Fr {
+        "Le nettoyage supprime les informations masquées du document : métadonnées, pièces jointes, commentaires, champs de formulaire (aplatis), texte et calques masqués, signets, liens, actions et scripts, ainsi que les données d'application privées."
+    } else {
+        "Sanitizing removes hidden information from the document: metadata, file attachments, comments, form fields (flattened), hidden text and layers, bookmarks, links, actions and scripts, and private application data."
+    };
+    ui.label(sanitize_msg);
     ui.add_space(4.0);
-    ui.label(
-        egui::RichText::new("Save the document afterwards; saving rewrites the whole file so nothing removed stays in it.")
-            .small()
-            .color(t.text_muted),
-    );
+    let save_hint = if lang == crate::i18n::Language::Fr {
+        "Enregistrez le document ensuite ; l'enregistrement réécrit l'intégralité du fichier pour qu'aucun élément supprimé ne subsiste."
+    } else {
+        "Save the document afterwards; saving rewrites the whole file so nothing removed stays in it."
+    };
+    ui.label(egui::RichText::new(save_hint).small().color(t.text_muted));
     ui.add_space(12.0);
-    buttons(ui, "Sanitize", true)
+    let san_btn = if lang == crate::i18n::Language::Fr {
+        "Nettoyer"
+    } else {
+        "Sanitize"
+    };
+    buttons(ui, san_btn, true, lang)
 }

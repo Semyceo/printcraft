@@ -315,22 +315,33 @@ pub(crate) fn type_box(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
 }
 
 /// The signature pad: draw with the pointer; returns the strokes (normalised) on Apply.
-pub(crate) fn signature_pad(ui: &mut egui::Ui, t: &Tokens, d: &mut SigDraft, preview: &mut Option<(String, egui::TextureHandle)>) -> (bool, bool) {
-    let what = if d.initials { "initials" } else { "signature" };
-    ui.label(egui::RichText::new(format!("Create {what}")).font(crate::theme::semibold(18.0)));
+pub(crate) fn signature_pad(
+    ui: &mut egui::Ui,
+    t: &Tokens,
+    d: &mut SigDraft,
+    preview: &mut Option<(String, egui::TextureHandle)>,
+    lang: crate::i18n::Language,
+) -> (bool, bool) {
+    let title = if d.initials { lang.tr("Create initials") } else { lang.tr("Create signature") };
+    ui.label(egui::RichText::new(title).font(crate::theme::semibold(18.0)));
     ui.horizontal(|ui| {
-        if crate::widgets::pill_button(ui, "Type", !d.drawing).clicked() {
+        if crate::widgets::pill_button(ui, &lang.tr("Type"), !d.drawing).clicked() {
             d.drawing = false;
         }
-        if crate::widgets::pill_button(ui, "Draw", d.drawing).clicked() {
+        if crate::widgets::pill_button(ui, &lang.tr("Draw"), d.drawing).clicked() {
             d.drawing = true;
         }
     });
     ui.add_space(6.0);
     if !d.drawing {
-        let l = ui.label(egui::RichText::new(format!("Type your {what}.")).color(t.text_muted));
-        ui.add(egui::TextEdit::singleline(&mut d.text).desired_width(460.0).hint_text(if d.initials { "Initials" } else { "Your name" }))
-            .labelled_by(l.id);
+        let prompt_text = if lang == crate::i18n::Language::Fr {
+            if d.initials { "Tapez vos initiales." } else { "Tapez votre signature." }
+        } else {
+            if d.initials { "Type your initials." } else { "Type your signature." }
+        };
+        let l = ui.label(egui::RichText::new(prompt_text).color(t.text_muted));
+        let hint = if d.initials { lang.tr("Initials") } else { lang.tr("Your name") };
+        ui.add(egui::TextEdit::singleline(&mut d.text).desired_width(460.0).hint_text(hint)).labelled_by(l.id);
         let (rect, _) = ui.allocate_exact_size(vec2(460.0, 150.0), Sense::hover());
         let painter = ui.painter_at(rect);
         painter.rect_filled(rect, CornerRadius::same(6), Color32::WHITE);
@@ -342,9 +353,14 @@ pub(crate) fn signature_pad(ui: &mut egui::Ui, t: &Tokens, d: &mut SigDraft, pre
         if let Some((_, tex)) = preview {
             painter.image(tex.id(), rect.shrink(4.0), egui::Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
         }
-        return pad_buttons(ui, d);
+        return pad_buttons(ui, d, lang);
     }
-    ui.label(egui::RichText::new(format!("Draw your {what} below.")).color(t.text_muted));
+    let draw_prompt = if lang == crate::i18n::Language::Fr {
+        if d.initials { "Dessinez vos initiales ci-dessous." } else { "Dessinez votre signature ci-dessous." }
+    } else {
+        if d.initials { "Draw your initials below." } else { "Draw your signature below." }
+    };
+    ui.label(egui::RichText::new(draw_prompt).color(t.text_muted));
     let strokes = &mut d.strokes;
     let (rect, resp) = ui.allocate_exact_size(vec2(460.0, 150.0), Sense::drag());
     let painter = ui.painter_at(rect);
@@ -368,23 +384,23 @@ pub(crate) fn signature_pad(ui: &mut egui::Ui, t: &Tokens, d: &mut SigDraft, pre
         let pts: Vec<Pos2> = s.iter().map(|p| pos2(rect.left() + p[0] * rect.width(), rect.bottom() - p[1] * rect.width())).collect();
         painter.add(egui::Shape::line(pts, Stroke::new(2.0, Color32::BLACK)));
     }
-    pad_buttons(ui, d)
+    pad_buttons(ui, d, lang)
 }
 
-fn pad_buttons(ui: &mut egui::Ui, d: &mut SigDraft) -> (bool, bool) {
+fn pad_buttons(ui: &mut egui::Ui, d: &mut SigDraft, lang: crate::i18n::Language) -> (bool, bool) {
     ui.add_space(10.0);
     let (mut apply, mut cancel) = (false, false);
     ui.horizontal(|ui| {
-        if ui.button("Clear").clicked() {
+        if ui.button(lang.tr("Clear")).clicked() {
             d.strokes.clear();
             d.text.clear();
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let ready = d.ready();
-            if ui.add_enabled_ui(ready, |ui| crate::widgets::pill_button(ui, "Apply", true)).inner.clicked() {
+            if ui.add_enabled_ui(ready, |ui| crate::widgets::pill_button(ui, &lang.tr("Apply"), true)).inner.clicked() {
                 apply = true;
             }
-            if crate::widgets::pill_button(ui, "Cancel", false).clicked() {
+            if crate::widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
                 cancel = true;
             }
         });

@@ -34,16 +34,18 @@ pub fn left_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
         });
 }
 
-fn panel_header(ui: &mut egui::Ui, t: &Tokens, title: &str, back: bool) -> (bool, bool) {
+fn panel_header(ui: &mut egui::Ui, t: &Tokens, language: crate::i18n::Language, title: &str, back: bool) -> (bool, bool) {
     let mut go_back = false;
     let mut close = false;
     ui.horizontal(|ui| {
-        if back && icons::button(ui, "chevron-left", 26.0, false, "Back to all tools").clicked() {
+        let back_tip = language.tr("Back to all tools");
+        if back && icons::button(ui, "chevron-left", 26.0, false, &back_tip).clicked() {
             go_back = true;
         }
         ui.label(egui::RichText::new(title).font(theme::semibold(15.5)).color(t.text));
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if icons::button(ui, "x", 26.0, false, "Close panel").clicked() {
+            let close_tip = language.tr("Close panel");
+            if icons::button(ui, "x", 26.0, false, &close_tip).clicked() {
                 close = true;
             }
         });
@@ -53,33 +55,35 @@ fn panel_header(ui: &mut egui::Ui, t: &Tokens, title: &str, back: bool) -> (bool
 }
 
 fn all_tools(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens) {
-    let (_, close) = panel_header(ui, t, "All tools", false);
+    let title = app.language.tr("All tools");
+    let (_, close) = panel_header(ui, t, app.language, &title, false);
     if close {
         app.left_open = false;
     }
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         let shown = if app.all_tools_expanded { TOOL_GROUPS.len() } else { COLLAPSED_TOOLS.min(TOOL_GROUPS.len()) };
         for g in &TOOL_GROUPS[..shown] {
-            if tool_row(ui, t, g).clicked() {
+            if tool_row(ui, t, app.language, g).clicked() {
                 app.left = LeftPanel::Tool(g.id);
             }
         }
         ui.add_space(4.0);
-        let more = if app.all_tools_expanded { "View less" } else { "View more" };
+        let more = if app.all_tools_expanded { app.language.tr("View less") } else { app.language.tr("View more") };
         if ui.add(egui::Label::new(egui::RichText::new(more).color(t.accent_text).font(theme::medium(13.0))).sense(Sense::click())).clicked() {
             app.all_tools_expanded = !app.all_tools_expanded;
         }
     });
 }
 
-fn tool_row(ui: &mut egui::Ui, t: &Tokens, g: &ToolGroup) -> egui::Response {
+fn tool_row(ui: &mut egui::Ui, t: &Tokens, language: crate::i18n::Language, g: &ToolGroup) -> egui::Response {
     let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 34.0), Sense::click());
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, g.label));
+    let label = language.tr(g.label);
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
     if resp.hovered() {
         ui.painter().rect_filled(rect, CornerRadius::same(6), t.hover);
     }
     icons::paint(ui, Rect::from_min_size(rect.min + vec2(6.0, 7.0), vec2(20.0, 20.0)), g.icon, 19.0, hue(g));
-    ui.painter().text(rect.left_center() + vec2(36.0, 0.0), Align2::LEFT_CENTER, g.label, theme::regular(13.5), t.text);
+    ui.painter().text(rect.left_center() + vec2(36.0, 0.0), Align2::LEFT_CENTER, &label, theme::regular(13.5), t.text);
     match (g.badge, g.availability) {
         (Some(b), _) => {
             let font = theme::semibold(9.5);
@@ -109,7 +113,8 @@ fn tool_row(ui: &mut egui::Ui, t: &Tokens, g: &ToolGroup) -> egui::Response {
 }
 
 fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static ToolGroup) {
-    let (back, close) = panel_header(ui, t, g.label, true);
+    let title = app.language.tr(g.label);
+    let (back, close) = panel_header(ui, t, app.language, &title, true);
     if back {
         app.left = LeftPanel::AllTools;
         app.mode = crate::Mode::AllTools;
@@ -133,8 +138,8 @@ fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'stat
     // Prepare a form: Preview fills the form as a reader would; Edit goes back.
     if g.id == "form" {
         ui.horizontal(|ui| {
-            let label = if app.form_preview { "Edit fields" } else { "Preview" };
-            if widgets::pill_button(ui, label, app.form_preview).on_hover_text("Try the form as people filling it in will see it").clicked() {
+            let label = if app.form_preview { app.language.tr("Edit fields") } else { app.language.tr("Preview") };
+            if widgets::pill_button(ui, &label, app.form_preview).on_hover_text(app.language.tr("Try the form as people filling it in will see it")).clicked() {
                 app.form_preview = !app.form_preview;
                 if app.form_preview {
                     app.quick_tool = crate::QuickTool::Select;
@@ -154,10 +159,11 @@ fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'stat
     let list_h = if footer { (ui.available_height() - 52.0).max(80.0) } else { ui.available_height() };
     egui::ScrollArea::vertical().auto_shrink([false, false]).max_height(list_h).show(ui, |ui| {
         for s in g.sections {
-            widgets::section_title(ui, s.title);
+            widgets::section_title(ui, &app.language.tr(s.title));
             for item in s.items {
                 let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 34.0), Sense::click());
-                resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, item.label));
+                let tr_item_label = app.language.tr(item.label);
+                resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &tr_item_label));
                 let ready = item.availability == Availability::Ready;
                 if resp.hovered() {
                     ui.painter().rect_filled(rect, CornerRadius::same(6), t.hover);
@@ -170,9 +176,10 @@ fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'stat
                     17.0,
                     if ready { hue(g) } else { t.text_faint },
                 );
-                ui.painter().text(rect.left_center() + vec2(34.0, 0.0), Align2::LEFT_CENTER, item.label, theme::regular(13.0), fg);
+                ui.painter().text(rect.left_center() + vec2(34.0, 0.0), Align2::LEFT_CENTER, &tr_item_label, theme::regular(13.0), fg);
+                let ready_text = app.language.tr("Ready");
                 let (chip, fill, cfg) = match item.availability {
-                    Availability::Ready => ("Ready", Color32::from_rgb(0xDD, 0xF3, 0xE4), Color32::from_rgb(0x1E, 0x7B, 0x43)),
+                    Availability::Ready => (ready_text, Color32::from_rgb(0xDD, 0xF3, 0xE4), Color32::from_rgb(0x1E, 0x7B, 0x43)),
                     Availability::Planned(m) => (m, t.pressed, t.text_muted),
                     Availability::Provider => ("AI", t.pressed, t.text_muted),
                 };
@@ -194,10 +201,10 @@ fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'stat
                 ui.label(egui::RichText::new(format!("{marks} mark{}", if marks == 1 { "" } else { "s" })).color(t.text_muted));
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.add_enabled_ui(marks > 0, |ui| widgets::pill_button(ui, "Redact all", true)).inner.clicked() {
+                if ui.add_enabled_ui(marks > 0, |ui| widgets::pill_button(ui, &app.language.tr("Redact all"), true)).inner.clicked() {
                     run = Some("redact.apply");
                 }
-                if ui.add_enabled_ui(marks > 0, |ui| widgets::pill_button(ui, "Clear all", false)).inner.clicked() {
+                if ui.add_enabled_ui(marks > 0, |ui| widgets::pill_button(ui, &app.language.tr("Clear all"), false)).inner.clicked() {
                     run = Some("redact.clear");
                 }
             });
@@ -212,16 +219,17 @@ fn tool_detail(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'stat
 /// page to place it.
 fn stamp_palette(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens) {
     use printcraft_engine::{StampGroup, StampKind};
-    ui.label(egui::RichText::new("Choose a stamp, then click on the page to place it.").small().color(t.text_faint));
+    ui.label(egui::RichText::new(app.language.tr("Choose a stamp, then click on the page to place it.")).small().color(t.text_faint));
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         for (group, title) in
             [(StampGroup::Dynamic, "Dynamic"), (StampGroup::SignHere, "Sign Here"), (StampGroup::StandardBusiness, "Standard Business")]
         {
-            widgets::section_title(ui, title);
+            widgets::section_title(ui, &app.language.tr(title));
             for kind in StampKind::ALL.into_iter().filter(|k| k.group() == group) {
                 let active = app.quick_tool == crate::QuickTool::Stamp(kind);
                 let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 38.0), Sense::click());
-                resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active, kind.label()));
+                let tr_kind_label = app.language.tr(kind.label());
+                resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active, &tr_kind_label));
                 if active {
                     ui.painter().rect_filled(rect, CornerRadius::same(6), t.accent_soft);
                 } else if resp.hovered() {
@@ -243,19 +251,19 @@ fn stamp_palette(app: &mut PrintCraftApp, ui: &mut egui::Ui, t: &Tokens) {
                     ui.painter().text(
                         chip.center() + vec2(tip / 2.0, 0.0),
                         Align2::CENTER_CENTER,
-                        kind.label(),
+                        &tr_kind_label,
                         theme::semibold(11.0),
                         Color32::WHITE,
                     );
                 } else {
                     ui.painter().rect(chip, CornerRadius::same(5), col.gamma_multiply(0.1), Stroke::new(1.5, col), egui::StrokeKind::Inside);
                     let y = if group == StampGroup::Dynamic { chip.center().y - 4.0 } else { chip.center().y };
-                    ui.painter().text(egui::pos2(chip.center().x, y), Align2::CENTER_CENTER, kind.label(), theme::semibold(11.0), col);
+                    ui.painter().text(egui::pos2(chip.center().x, y), Align2::CENTER_CENTER, &tr_kind_label, theme::semibold(11.0), col);
                     if group == StampGroup::Dynamic {
                         ui.painter().text(
                             egui::pos2(chip.center().x, chip.bottom() - 6.0),
                             Align2::CENTER_CENTER,
-                            "By name at time, date",
+                            app.language.tr("By name at time, date"),
                             theme::regular(7.5),
                             col,
                         );
@@ -407,20 +415,22 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                     RightPanel::Compare => ("Compare", compare.as_ref().filter(|c| c.new == id).map(|c| c.result.changes.len())),
                 };
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new(title).font(theme::semibold(15.5)));
+                    ui.label(egui::RichText::new(app.language.tr(title)).font(theme::semibold(15.5)));
                     if let Some(c) = count {
                         ui.label(egui::RichText::new(c.to_string()).font(theme::medium(13.0)).color(t.text_faint));
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if icons::button(ui, "x", 26.0, false, "Close").clicked() {
+                        let close_tip = app.language.tr("Close");
+                        if icons::button(ui, "x", 26.0, false, &close_tip).clicked() {
                             close = true;
                         }
                         // Right to left: close, "…", filter, search (Acrobat's order left to right).
                         if panel == RightPanel::Comments {
                             panel_command = crate::comments_panel::header_controls(ui, info, view, doc.comments_hidden());
                         }
+                        let search_comments_tip = app.language.tr("Search comments");
                         if panel == RightPanel::Comments
-                            && icons::button(ui, "search", 26.0, view.comments.search.is_some(), "Search comments").clicked()
+                            && icons::button(ui, "search", 26.0, view.comments.search.is_some(), &search_comments_tip).clicked()
                         {
                             view.comments.search = match view.comments.search {
                                 Some(_) => None,
@@ -429,22 +439,24 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                             view.comments.search_focus = true;
                         }
                         if panel == RightPanel::Bookmarks && !info.outline.is_empty() {
-                            let more = icons::button(ui, "ellipsis", 26.0, false, "Bookmark options");
+                            let bm_opts_tip = app.language.tr("Bookmark options");
+                            let more = icons::button(ui, "ellipsis", 26.0, false, &bm_opts_tip);
                             egui::Popup::menu(&more).show(|ui| {
                                 ui.set_min_width(200.0);
                                 for (levels, label) in
                                     [(usize::MAX, "Expand all bookmarks"), (1, "Expand top-level bookmarks"), (0, "Collapse all bookmarks")]
                                 {
-                                    if ui.button(label).clicked() {
+                                    if ui.button(app.language.tr(label)).clicked() {
                                         bm_expand = Some(levels);
                                         ui.close();
                                     }
                                 }
                             });
                         }
+                        let new_bm_tip = app.language.tr("New bookmark (⌘B)");
                         if panel == RightPanel::Bookmarks
                             && bm_editable
-                            && icons::button(ui, "bookmark-plus", 26.0, false, "New bookmark (⌘B)").clicked()
+                            && icons::button(ui, "bookmark-plus", 26.0, false, &new_bm_tip).clicked()
                         {
                             bm_action = Some(BmAction::New);
                         }
@@ -459,7 +471,7 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                     }
                     RightPanel::Bookmarks => {
                         if info.outline.is_empty() {
-                            empty(ui, &t, "bookmark", "This document has no bookmarks.");
+                            empty(ui, &t, "bookmark", &app.language.tr("This document has no bookmarks."));
                         }
                         let mut ctx = OutlineCtx {
                             nav: &mut nav,
@@ -468,16 +480,17 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                             editable: bm_editable,
                             current: view.current,
                             expand: bm_expand,
+                            language: app.language,
                         };
                         for (i, item) in info.outline.iter().enumerate() {
                             outline_item(ui, &t, info, item, &[i], info.outline.len(), &mut ctx);
                         }
                     }
                     RightPanel::Pages => pages(ui, &t, info, view, &mut nav),
-                    RightPanel::Fields => fields(ui, &t, info, &doc.form, preparing, &mut nav, &mut panel_edit),
+                    RightPanel::Fields => fields(ui, &t, info, &doc.form, preparing, &mut nav, &mut panel_edit, app.language),
                     RightPanel::Layers => {
                         if info.layers.is_empty() {
-                            empty(ui, &t, "layers", "This document has no layers.");
+                            empty(ui, &t, "layers", &app.language.tr("This document has no layers."));
                         }
                         for (li, l) in info.layers.iter().enumerate() {
                             let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 32.0), Sense::click());
@@ -494,7 +507,8 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                             );
                             let fg = if l.visible { t.text } else { t.text_faint };
                             ui.painter().text(rect.left_center() + vec2(32.0, 0.0), Align2::LEFT_CENTER, &l.name, theme::regular(13.0), fg);
-                            if resp.on_hover_text(if l.visible { "Hide layer" } else { "Show layer" }).clicked() {
+                            let layer_tip = if l.visible { app.language.tr("Hide layer") } else { app.language.tr("Show layer") };
+                            if resp.on_hover_text(layer_tip).clicked() {
                                 toggle_layer = Some((li, !l.visible));
                             }
                         }
@@ -505,11 +519,11 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                     RightPanel::Accessibility => {
                         a11y_action = crate::a11y_ui::panel(ui, &t, a11y, id);
                     }
-                    RightPanel::Search => crate::search_ui::panel(ui, &t, view, info.pages.len()),
+                    RightPanel::Search => crate::search_ui::panel(ui, &t, view, info.pages.len(), app.language),
                     RightPanel::Compare => compare_action = crate::compare_ui::panel(ui, &t, compare, id),
                     RightPanel::Attachments => {
                         if info.attachments.is_empty() {
-                            empty(ui, &t, "paperclip", "This document has no attachments.");
+                            empty(ui, &t, "paperclip", &app.language.tr("This document has no attachments."));
                         }
                         for (ai, a) in info.attachments.iter().enumerate() {
                             egui::Frame::NONE.inner_margin(egui::Margin::symmetric(4, 6)).show(ui, |ui| {
@@ -520,7 +534,7 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                                         ui.add(egui::Label::new(egui::RichText::new(&a.name).font(theme::medium(13.0))).truncate());
                                         let mut meta = a.size.map(human_size).unwrap_or_default();
                                         if let printcraft_render::AttachmentSource::Annotation { page, .. } = a.source {
-                                            meta = format!("{meta}  ·  on page {}", info.pages.get(page).map(|p| p.label.as_str()).unwrap_or("?"));
+                                            meta = format!("{meta}  ·  {} {}", app.language.tr("on page"), info.pages.get(page).map(|p| p.label.as_str()).unwrap_or("?"));
                                         }
                                         if let Some(d) = &a.description {
                                             meta = format!("{meta}  ·  {d}");
@@ -528,11 +542,13 @@ pub fn right_panel(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                                         ui.add(egui::Label::new(egui::RichText::new(meta).color(t.text_faint).small()).truncate());
                                     });
                                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        if icons::button(ui, "file-down", 28.0, false, "Save attachment…").clicked() {
+                                        let save_att_tip = app.language.tr("Save attachment…");
+                                        if icons::button(ui, "file-down", 28.0, false, &save_att_tip).clicked() {
                                             attachment_action = Some((ai, false));
                                         }
+                                        let open_tab_tip = app.language.tr("Open in a new tab");
                                         if a.name.to_lowercase().ends_with(".pdf")
-                                            && icons::button(ui, "file-input", 28.0, false, "Open in a new tab").clicked()
+                                            && icons::button(ui, "file-input", 28.0, false, &open_tab_tip).clicked()
                                         {
                                             attachment_action = Some((ai, true));
                                         }
@@ -641,6 +657,7 @@ struct OutlineCtx<'a> {
     current: usize,
     /// Expand all (`Some(usize::MAX)`), collapse all (`Some(0)`) or expand to a depth, this frame.
     expand: Option<usize>,
+    language: crate::i18n::Language,
 }
 
 fn outline_item(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, item: &OutlineItem, path: &[usize], siblings: usize, cx: &mut OutlineCtx<'_>) {
@@ -716,6 +733,7 @@ fn outline_item(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, item: &OutlineIte
             && let Some(&i) = path.last()
         {
             let current = cx.current;
+            let lang = cx.language;
             resp.context_menu(|ui| {
                 let mut pick = |ui: &mut egui::Ui, label: &str, enabled: bool, a: BmAction| {
                     if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
@@ -723,15 +741,16 @@ fn outline_item(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, item: &OutlineIte
                         ui.close();
                     }
                 };
-                pick(ui, "Rename", true, BmAction::StartRename(path.to_vec()));
-                pick(ui, &format!("Set to current page ({})", current + 1), true, BmAction::SetToCurrentPage(path.to_vec()));
+                pick(ui, &lang.tr("Rename"), true, BmAction::StartRename(path.to_vec()));
+                let current_page_tr = lang.tr("Set to current page");
+                pick(ui, &format!("{current_page_tr} ({})", current + 1), true, BmAction::SetToCurrentPage(path.to_vec()));
                 ui.separator();
-                pick(ui, "Move up", i > 0, BmAction::MoveUp(path.to_vec()));
-                pick(ui, "Move down", i + 1 < siblings, BmAction::MoveDown(path.to_vec()));
-                pick(ui, "Indent", i > 0, BmAction::Indent(path.to_vec()));
-                pick(ui, "Outdent", depth > 0, BmAction::Outdent(path.to_vec()));
+                pick(ui, &lang.tr("Move up"), i > 0, BmAction::MoveUp(path.to_vec()));
+                pick(ui, &lang.tr("Move down"), i + 1 < siblings, BmAction::MoveDown(path.to_vec()));
+                pick(ui, &lang.tr("Indent"), i > 0, BmAction::Indent(path.to_vec()));
+                pick(ui, &lang.tr("Outdent"), depth > 0, BmAction::Outdent(path.to_vec()));
                 ui.separator();
-                pick(ui, "Delete", true, BmAction::Delete(path.to_vec()));
+                pick(ui, &lang.tr("Delete"), true, BmAction::Delete(path.to_vec()));
             });
         }
     }
@@ -787,22 +806,23 @@ fn fields(
     preparing: bool,
     nav: &mut Option<Nav>,
     edit: &mut Option<printcraft_engine::Edit>,
+    language: crate::i18n::Language,
 ) {
     if info.fields.is_empty() {
-        empty(ui, t, "text-cursor-input", "This document has no form fields.");
+        empty(ui, t, "text-cursor-input", &language.tr("This document has no form fields."));
         return;
     }
     let rank = |name: &str| form.iter().find(|f| f.name == name).and_then(|f| f.widgets.iter().map(|w| w.tab).min()).unwrap_or(usize::MAX);
     let mut ordered: Vec<_> = info.fields.iter().collect();
     ordered.sort_by_key(|f| (f.page, rank(&f.name)));
     if preparing {
-        ui.label(egui::RichText::new("Tab order: move a field with its arrows.").small().color(t.text_muted));
+        ui.label(egui::RichText::new(language.tr("Tab order: move a field with its arrows.")).small().color(t.text_muted));
     }
     let mut pages: Vec<Option<usize>> = info.fields.iter().map(|f| f.page).collect();
     pages.sort();
     pages.dedup();
     for p in pages {
-        let label = p.map(|p| format!("Page {}", info.pages[p].label)).unwrap_or_else(|| "Unplaced".into());
+        let label = p.map(|p| format!("{} {}", language.tr("Page"), info.pages[p].label)).unwrap_or_else(|| language.tr("Unplaced").to_string());
         ui.add_space(4.0);
         ui.label(egui::RichText::new(label).font(theme::semibold(12.5)).color(t.text_muted));
         for f in ordered.iter().copied().filter(|f| f.page == p) {

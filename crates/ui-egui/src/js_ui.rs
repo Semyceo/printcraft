@@ -136,10 +136,10 @@ fn buttons(ui: &mut egui::Ui, primary: &str, others: &[&str]) -> Option<String> 
 
 /// The JavaScript console. Returns `true` to close.
 pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> bool {
-    ui.label(egui::RichText::new("JavaScript Console").font(theme::semibold(18.0)));
+    ui.label(egui::RichText::new(app.language.tr("JavaScript Console")).font(theme::semibold(18.0)));
     ui.add_space(6.0);
     if !app.session.javascript() {
-        ui.label(egui::RichText::new("JavaScript is turned off (Preferences ▸ JavaScript).").small().color(t.text_muted));
+        ui.label(egui::RichText::new(app.language.tr("JavaScript is turned off (Preferences ▸ JavaScript).")).small().color(t.text_muted));
     }
     egui::Frame::new().fill(t.hover).corner_radius(egui::CornerRadius::same(6)).inner_margin(egui::Margin::same(8)).show(ui, |ui| {
         ui.set_width(ui.available_width());
@@ -147,7 +147,7 @@ pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Token
             ui.set_width(ui.available_width());
             ui.set_min_height(160.0);
             if app.js_console.log.is_empty() {
-                ui.label(egui::RichText::new("Output appears here.").color(t.text_muted));
+                ui.label(egui::RichText::new(app.language.tr("Output appears here.")).color(t.text_muted));
             }
             for line in &app.js_console.log {
                 ui.label(egui::RichText::new(line).monospace());
@@ -165,10 +165,13 @@ pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Token
     );
     let run_key = input.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
     ui.add_space(8.0);
-    match buttons(ui, "Run", &["Close", "Clear"]).as_deref() {
-        Some("Run") => app.run_console(),
-        Some("Clear") => app.js_console.log.clear(),
-        Some("Close") => return true,
+    let run_btn = app.language.tr("Run");
+    let close_btn = app.language.tr("Close");
+    let clear_btn = app.language.tr("Clear");
+    match buttons(ui, &run_btn, &[&close_btn, &clear_btn]).as_deref() {
+        Some(b) if b == run_btn => app.run_console(),
+        Some(b) if b == clear_btn => app.js_console.log.clear(),
+        Some(b) if b == close_btn => return true,
         _ if run_key => app.run_console(),
         _ => {}
     }
@@ -177,12 +180,12 @@ pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Token
 
 /// Document JavaScripts: list, edit, add and delete. Returns `true` to close.
 pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> bool {
-    ui.label(egui::RichText::new("Document JavaScripts").font(theme::semibold(18.0)));
+    ui.label(egui::RichText::new(app.language.tr("Document JavaScripts")).font(theme::semibold(18.0)));
     ui.add_space(6.0);
     let scripts = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.document_scripts()).unwrap_or_default();
     let mut edit: Option<Edit> = None;
     ui.horizontal(|ui| {
-        ui.label("Script Name:");
+        ui.label(app.language.tr("Script Name:"));
         ui.add(egui::TextEdit::singleline(&mut app.doc_js.name).desired_width(240.0).id_salt("doc-js-name"));
     });
     ui.add_space(4.0);
@@ -191,7 +194,7 @@ pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
         egui::ScrollArea::vertical().max_height(120.0).id_salt("doc-js-list").show(ui, |ui| {
             ui.set_width(ui.available_width());
             if scripts.is_empty() {
-                ui.label(egui::RichText::new("This document has no document-level scripts.").color(t.text_muted));
+                ui.label(egui::RichText::new(app.language.tr("This document has no document-level scripts.")).color(t.text_muted));
             }
             for (name, js) in &scripts {
                 if ui.selectable_label(app.doc_js.name == *name, name).clicked() {
@@ -204,17 +207,20 @@ pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
     ui.add(egui::TextEdit::multiline(&mut app.doc_js.script).code_editor().desired_rows(8).desired_width(f32::INFINITY).id_salt("doc-js-script"));
     ui.add_space(8.0);
     let name = app.doc_js.name.trim().to_string();
-    let close = match buttons(ui, "Save", &["Close", "Delete"]).as_deref() {
-        Some("Save") if !name.is_empty() => {
+    let save_btn = app.language.tr("Save");
+    let close_btn = app.language.tr("Close");
+    let delete_btn = app.language.tr("Delete");
+    let close = match buttons(ui, &save_btn, &[&close_btn, &delete_btn]).as_deref() {
+        Some(b) if b == save_btn && !name.is_empty() => {
             edit = Some(Edit::SetDocumentScript { name, script: Some(app.doc_js.script.clone()) });
             false
         }
-        Some("Delete") if scripts.iter().any(|(n, _)| *n == name) => {
+        Some(b) if b == delete_btn && scripts.iter().any(|(n, _)| *n == name) => {
             edit = Some(Edit::SetDocumentScript { name, script: None });
             app.doc_js = DocJsDraft::default();
             false
         }
-        Some("Close") => true,
+        Some(b) if b == close_btn => true,
         _ => false,
     };
     if let Some(e) = edit {
@@ -251,11 +257,12 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
             app.session.set_javascript(on);
         }
         ui.label(
-            egui::RichText::new("Scripts run in a sandbox without file or network access. With JavaScript off, Acrobat's standard format, validate and calculate functions still work.")
+            egui::RichText::new(app.language.tr("Scripts run in a sandbox without file or network access. With JavaScript off, Acrobat's standard format, validate and calculate functions still work."))
                 .small()
                 .color(t.text_muted),
         );
     });
     ui.add_space(10.0);
-    buttons(ui, "OK", &[]).is_some()
+    let ok_btn = app.language.tr("OK");
+    buttons(ui, &ok_btn, &[]).is_some()
 }

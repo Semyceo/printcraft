@@ -76,7 +76,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
         w.hovered.bg_stroke = egui::Stroke::new(1.0, t.text_muted);
         match dialog {
             Dialog::Properties(tab) => {
-                ui.label(egui::RichText::new("Document Properties").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Document Properties")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     for (tb, label) in [
@@ -86,7 +86,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                         (PropsTab::Fonts, "Fonts"),
                         (PropsTab::Advanced, "Advanced"),
                     ] {
-                        if widgets::mode_tab(ui, label, tab == tb).clicked() {
+                        if widgets::mode_tab(ui, &app.language.tr(label), tab == tb).clicked() {
                             next = Dialog::Properties(tb);
                         }
                     }
@@ -96,7 +96,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 let Some(doc) = app.session.get(id) else { return };
                 let i = &doc.info;
                 let row = |ui: &mut egui::Ui, k: &str, v: String| {
-                    ui.label(egui::RichText::new(k).color(t.text_muted));
+                    ui.label(egui::RichText::new(app.language.tr(k)).color(t.text_muted));
                     ui.label(if v.is_empty() { egui::RichText::new("—").color(t.text_faint) } else { egui::RichText::new(v) });
                     ui.end_row();
                 };
@@ -107,7 +107,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                             match app.props_draft.as_mut() {
                                 Some((_, draft)) if doc.allows_modification() => {
                                     for (k, v) in INFO_KEYS.iter().zip(draft.iter_mut()) {
-                                        let l = ui.label(egui::RichText::new(*k).color(t.text_muted));
+                                        let l = ui.label(egui::RichText::new(app.language.tr(*k)).color(t.text_muted));
                                         ui.add(
                                             egui::TextEdit::singleline(v)
                                                 .desired_width(420.0)
@@ -134,14 +134,19 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                             let editable = doc.allows_modification();
                             let pages = i.pages.len();
                             let Some((_, v)) = app.view_draft.as_mut() else { return };
-                            ui.label(egui::RichText::new("Layout and Magnification").font(theme::semibold(12.5)));
+                            ui.label(egui::RichText::new(app.language.tr("Layout and Magnification")).font(theme::semibold(12.5)));
                             ui.end_row();
-                            ui.label("Navigation tab");
+                            ui.label(app.language.tr("Navigation tab"));
                             ui.add_enabled_ui(editable, |ui| {
+                                let cur_label = match v.navigation {
+                                    N::PageOnly => app.language.tr("Page Only"),
+                                    N::Bookmarks => app.language.tr("Bookmarks Panel and Page"),
+                                    N::Pages => app.language.tr("Pages Panel and Page"),
+                                    N::Attachments => app.language.tr("Attachments Panel and Page"),
+                                    N::Layers => app.language.tr("Layers Panel and Page"),
+                                };
                                 egui::ComboBox::from_id_salt("iv-nav")
-                                    .selected_text(
-                                        format!("{:?}", v.navigation).replace("PageOnly", "Page Only").replace("Pages", "Pages Panel and Page"),
-                                    )
+                                    .selected_text(cur_label)
                                     .show_ui(ui, |ui| {
                                         for (n, l) in [
                                             (N::PageOnly, "Page Only"),
@@ -150,12 +155,12 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                                             (N::Attachments, "Attachments Panel and Page"),
                                             (N::Layers, "Layers Panel and Page"),
                                         ] {
-                                            ui.selectable_value(&mut v.navigation, n, l);
+                                            ui.selectable_value(&mut v.navigation, n, app.language.tr(l));
                                         }
                                     });
                             });
                             ui.end_row();
-                            ui.label("Page layout");
+                            ui.label(app.language.tr("Page layout"));
                             ui.add_enabled_ui(editable, |ui| {
                                 let names = [
                                     (L::Default, "Default"),
@@ -167,14 +172,14 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                                     (L::TwoUpContinuousCoverPage, "Two-Up Continuous (Cover Page)"),
                                 ];
                                 let shown = names.iter().find(|(l, _)| *l == v.layout).map_or("Default", |(_, n)| n);
-                                egui::ComboBox::from_id_salt("iv-layout").selected_text(shown).show_ui(ui, |ui| {
+                                egui::ComboBox::from_id_salt("iv-layout").selected_text(app.language.tr(shown)).show_ui(ui, |ui| {
                                     for (l, n) in names {
-                                        ui.selectable_value(&mut v.layout, l, n);
+                                        ui.selectable_value(&mut v.layout, l, app.language.tr(n));
                                     }
                                 });
                             });
                             ui.end_row();
-                            ui.label("Magnification");
+                            ui.label(app.language.tr("Magnification"));
                             ui.add_enabled_ui(editable, |ui| {
                                 ui.horizontal(|ui| {
                                     let names = [
@@ -187,11 +192,11 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                                     ];
                                     let shown = match v.magnification {
                                         M::Percent(p) => format!("{p:.0}%"),
-                                        m => names.iter().find(|(x, _)| *x == m).map_or("Default", |(_, n)| n).to_string(),
+                                        m => app.language.tr(names.iter().find(|(x, _)| *x == m).map_or("Default", |(_, n)| n)).to_string(),
                                     };
                                     egui::ComboBox::from_id_salt("iv-mag").selected_text(shown).show_ui(ui, |ui| {
                                         for (m, n) in names {
-                                            ui.selectable_value(&mut v.magnification, m, n);
+                                            ui.selectable_value(&mut v.magnification, m, app.language.tr(n));
                                         }
                                         for p in [50.0, 75.0, 125.0, 150.0, 200.0] {
                                             ui.selectable_value(&mut v.magnification, M::Percent(p), format!("{p:.0}%"));
@@ -200,86 +205,86 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                                 });
                             });
                             ui.end_row();
-                            ui.label("Open to page");
+                            ui.label(app.language.tr("Open to page"));
                             ui.add_enabled_ui(editable, |ui| {
                                 let mut p = v.page + 1;
                                 if ui.add(egui::DragValue::new(&mut p).range(1..=pages.max(1))).changed() {
                                     v.page = p - 1;
                                 }
-                                ui.label(format!("of {pages}"));
+                                ui.label(format!("{} {pages}", app.language.tr("of")));
                             });
                             ui.end_row();
-                            ui.label(egui::RichText::new("Window Options").font(theme::semibold(12.5)));
+                            ui.label(egui::RichText::new(app.language.tr("Window Options")).font(theme::semibold(12.5)));
                             ui.end_row();
                             ui.label("");
                             ui.add_enabled_ui(editable, |ui| {
                                 ui.vertical(|ui| {
-                                    ui.checkbox(&mut v.fit_window, "Resize window to initial page");
-                                    ui.checkbox(&mut v.center_window, "Center window on screen");
-                                    ui.checkbox(&mut v.full_screen, "Open in Full Screen mode");
+                                    ui.checkbox(&mut v.fit_window, app.language.tr("Resize window to initial page"));
+                                    ui.checkbox(&mut v.center_window, app.language.tr("Center window on screen"));
+                                    ui.checkbox(&mut v.full_screen, app.language.tr("Open in Full Screen mode"));
                                     ui.horizontal(|ui| {
-                                        ui.label("Show:");
-                                        ui.radio_value(&mut v.display_title, false, "File Name");
-                                        ui.radio_value(&mut v.display_title, true, "Document Title");
+                                        ui.label(app.language.tr("Show:"));
+                                        ui.radio_value(&mut v.display_title, false, app.language.tr("File Name"));
+                                        ui.radio_value(&mut v.display_title, true, app.language.tr("Document Title"));
                                     });
                                 });
                             });
                             ui.end_row();
-                            ui.label(egui::RichText::new("User Interface Options").font(theme::semibold(12.5)));
+                            ui.label(egui::RichText::new(app.language.tr("User Interface Options")).font(theme::semibold(12.5)));
                             ui.end_row();
                             ui.label("");
                             ui.add_enabled_ui(editable, |ui| {
                                 ui.vertical(|ui| {
-                                    ui.checkbox(&mut v.hide_menubar, "Hide menu bar");
-                                    ui.checkbox(&mut v.hide_toolbar, "Hide toolbars");
-                                    ui.checkbox(&mut v.hide_window_ui, "Hide window controls");
+                                    ui.checkbox(&mut v.hide_menubar, app.language.tr("Hide menu bar"));
+                                    ui.checkbox(&mut v.hide_toolbar, app.language.tr("Hide toolbars"));
+                                    ui.checkbox(&mut v.hide_window_ui, app.language.tr("Hide window controls"));
                                 });
                             });
                             ui.end_row();
                         }
                         PropsTab::Security => match doc.security_summary() {
                             None => {
-                                row(ui, "Security method", "No security".into());
-                                row(ui, "Restrictions", "None — everything is allowed".into());
-                                if doc.allows_security_change() && ui.button("Protect using password…").clicked() {
+                                row(ui, "Security method", app.language.tr("No security").into());
+                                row(ui, "Restrictions", app.language.tr("None — everything is allowed").into());
+                                if doc.allows_security_change() && ui.button(app.language.tr("Protect using password…")).clicked() {
                                     link_command = Some("protect.password");
                                 }
                             }
                             Some(sec) => {
-                                row(ui, "Security method", "Password security".into());
+                                row(ui, "Security method", app.language.tr("Password security").into());
                                 row(ui, "Encryption", sec.method.clone());
                                 row(
                                     ui,
                                     "Opened with",
                                     if sec.pending {
-                                        "— (protection is applied when you save)".into()
+                                        format!("— ({})", app.language.tr("protection is applied when you save"))
                                     } else if sec.owner {
-                                        "Owner password (no restrictions apply)".into()
+                                        app.language.tr("Owner password (no restrictions apply)").into()
                                     } else {
-                                        "User password".into()
+                                        app.language.tr("User password").into()
                                     },
                                 );
                                 if doc.allows_security_change() {
                                     ui.horizontal(|ui| {
-                                        if ui.button("Change settings…").clicked() {
+                                        if ui.button(app.language.tr("Change settings…")).clicked() {
                                             link_command = Some("protect.password");
                                         }
-                                        if ui.button("Remove security").clicked() {
+                                        if ui.button(app.language.tr("Remove security")).clicked() {
                                             link_command = Some("protect.remove");
                                         }
                                     });
                                 }
                                 let p = sec.permissions;
-                                let yes = |b: bool| if b { "Allowed".to_string() } else { "Not allowed".to_string() };
+                                let yes = |b: bool| if b { app.language.tr("Allowed").to_string() } else { app.language.tr("Not allowed").to_string() };
                                 row(
                                     ui,
                                     "Printing",
                                     if !p.print() {
-                                        "Not allowed".into()
+                                        app.language.tr("Not allowed").into()
                                     } else if p.print_high_quality() {
-                                        "High resolution".into()
+                                        app.language.tr("High resolution").into()
                                     } else {
-                                        "Low resolution".into()
+                                        app.language.tr("Low resolution").into()
                                     },
                                 );
                                 row(ui, "Changing the document", yes(p.modify()));
@@ -376,7 +381,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 });
             }
             Dialog::Split => {
-                ui.label(egui::RichText::new("Split document").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Split document")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 let Some((vi, id)) = app.active_ids() else { return };
                 let n = app.session.get(id).map(|d| d.info.pages.len()).unwrap_or(0);
@@ -387,27 +392,27 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 if selected.is_empty() && draft.mode == M::Selection {
                     draft.mode = M::Pages;
                 }
-                ui.radio_value(&mut draft.mode, M::Pages, "Number of pages");
+                ui.radio_value(&mut draft.mode, M::Pages, app.language.tr("Number of pages"));
                 ui.add_enabled_ui(draft.mode == M::Pages, |ui| {
                     ui.horizontal(|ui| {
                         ui.add_space(24.0);
-                        ui.label("Pages per file");
+                        ui.label(app.language.tr("Pages per file"));
                         ui.add(egui::DragValue::new(&mut draft.every).range(1..=n.max(1)));
                     });
                 });
-                ui.radio_value(&mut draft.mode, M::Size, "File size");
+                ui.radio_value(&mut draft.mode, M::Size, app.language.tr("File size"));
                 ui.add_enabled_ui(draft.mode == M::Size, |ui| {
                     ui.horizontal(|ui| {
                         ui.add_space(24.0);
-                        ui.label("At most");
+                        ui.label(app.language.tr("At most"));
                         ui.add(egui::DragValue::new(&mut draft.size_mb).range(0.05..=2000.0).speed(0.1).suffix(" MB"));
                     });
                 });
                 ui.add_enabled_ui(!marks.is_empty(), |ui| {
-                    ui.radio_value(&mut draft.mode, M::Bookmarks, format!("Top-level bookmarks ({})", marks.len()))
+                    ui.radio_value(&mut draft.mode, M::Bookmarks, format!("{} ({})", app.language.tr("Top-level bookmarks"), marks.len()))
                 });
                 ui.add_enabled_ui(!selected.is_empty(), |ui| {
-                    ui.radio_value(&mut draft.mode, M::Selection, "Before each selected page (select pages in Organize)")
+                    ui.radio_value(&mut draft.mode, M::Selection, app.language.tr("Before each selected page (select pages in Organize)"))
                 });
                 let plan = match draft.mode {
                     M::Pages => crate::SplitPlan::By(printcraft_engine::SplitBy::PageCount(draft.every)),
@@ -424,8 +429,20 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 };
                 ui.add_space(8.0);
                 let text = match files {
-                    Some(f) => format!("Creates {f} file{} from {n} pages.", if f == 1 { "" } else { "s" }),
-                    None => format!("Each file holds as many of the {n} pages as fit."),
+                    Some(f) => {
+                        if app.language == crate::i18n::Language::Fr {
+                            format!("Crée {f} fichier{} à partir de {n} pages.", if f == 1 { "" } else { "s" })
+                        } else {
+                            format!("Creates {f} file{} from {n} pages.", if f == 1 { "" } else { "s" })
+                        }
+                    }
+                    None => {
+                        if app.language == crate::i18n::Language::Fr {
+                            format!("Chaque fichier contient autant des {n} pages que possible.")
+                        } else {
+                            format!("Each file holds as many of the {n} pages as fit.")
+                        }
+                    }
                 };
                 ui.label(egui::RichText::new(text).color(t.text_muted));
                 if files.is_none_or(|f| f > 1) {
@@ -438,44 +455,52 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                     close = true;
                     return;
                 };
-                ui.label(egui::RichText::new("Replace Pages").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Replace Pages")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 d.to = d.to.clamp(1, count);
                 d.from = d.from.clamp(1, d.to);
                 let n = d.to - d.from + 1;
                 ui.horizontal(|ui| {
-                    ui.label("Original: replace pages");
+                    ui.label(app.language.tr("Original: replace pages"));
                     ui.add(egui::DragValue::new(&mut d.from).range(1..=count));
-                    ui.label("to");
+                    ui.label(app.language.tr("to"));
                     ui.add(egui::DragValue::new(&mut d.to).range(1..=count));
-                    ui.label(egui::RichText::new(format!("of {count}")).color(t.text_muted));
+                    ui.label(egui::RichText::new(format!("{} {count}", app.language.tr("of"))).color(t.text_muted));
                 });
                 let max_start = d.src_pages.saturating_sub(n) + 1;
                 d.src_from = d.src_from.clamp(1, max_start.max(1));
                 ui.horizontal(|ui| {
-                    ui.label(format!("Replacement: pages of {}", d.name));
+                    let repl_label = if app.language == crate::i18n::Language::Fr {
+                        format!("Remplacement : pages de {}", d.name)
+                    } else {
+                        format!("Replacement: pages of {}", d.name)
+                    };
+                    ui.label(repl_label);
                     ui.add(egui::DragValue::new(&mut d.src_from).range(1..=max_start.max(1)));
-                    ui.label(format!("to {}", d.src_from + n - 1));
-                    ui.label(egui::RichText::new(format!("of {}", d.src_pages)).color(t.text_muted));
+                    ui.label(format!("{} {}", app.language.tr("to"), d.src_from + n - 1));
+                    ui.label(egui::RichText::new(format!("{} {}", app.language.tr("of"), d.src_pages)).color(t.text_muted));
                 });
                 let fits = n <= d.src_pages;
                 ui.add_space(6.0);
-                ui.label(
-                    egui::RichText::new(if fits {
-                        "Only the page content changes: links, comments, form fields and bookmarks on the original pages stay."
+                let msg = if fits {
+                    if app.language == crate::i18n::Language::Fr {
+                        "Seul le contenu de la page change : les liens, commentaires, champs de formulaire et signets d'origine sont conservés."
                     } else {
-                        "The replacement file doesn't have that many pages."
-                    })
-                    .small()
-                    .color(t.text_faint),
-                );
+                        "Only the page content changes: links, comments, form fields and bookmarks on the original pages stay."
+                    }
+                } else if app.language == crate::i18n::Language::Fr {
+                    "Le fichier de remplacement ne contient pas autant de pages."
+                } else {
+                    "The replacement file doesn't have that many pages."
+                };
+                ui.label(egui::RichText::new(msg).small().color(t.text_faint));
                 ui.add_space(10.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.add_enabled_ui(fits, |ui| widgets::pill_button(ui, "OK", true)).inner.clicked() {
+                    if ui.add_enabled_ui(fits, |ui| widgets::pill_button(ui, &app.language.tr("OK"), true)).inner.clicked() {
                         replace_now = true;
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -483,7 +508,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             }
             Dialog::RedactPages => {
                 let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
-                let (ok, cancel) = crate::redact_ui::pages_body(ui, &mut app.redact_pages_draft, n, &t);
+                let (ok, cancel) = crate::redact_ui::pages_body(ui, &mut app.redact_pages_draft, n, &t, app.language);
                 if ok {
                     redact_now = Some(dialog);
                 }
@@ -491,7 +516,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::RedactSearch => {
-                let (go, cancel) = crate::redact_ui::search_body(ui, &mut app.redact_search, &t);
+                let (go, cancel) = crate::redact_ui::search_body(ui, &mut app.redact_search, &t, app.language);
                 if go {
                     redact_now = Some(dialog);
                 }
@@ -500,14 +525,14 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             }
             Dialog::RedactProps => {
                 let mut prefs = app.redact_prefs.clone();
-                let (ok, cancel) = crate::redact_ui::props_body(ui, &mut prefs, &t);
+                let (ok, cancel) = crate::redact_ui::props_body(ui, &mut prefs, &t, app.language);
                 app.redact_prefs = prefs;
                 close = ok || cancel;
                 return;
             }
             Dialog::RedactApply => {
                 let marks = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(0, |d| d.redaction_marks());
-                let (ok, cancel) = crate::redact_ui::apply_body(ui, marks, &t);
+                let (ok, cancel) = crate::redact_ui::apply_body(ui, marks, &t, app.language);
                 if ok {
                     redact_now = Some(dialog);
                 }
@@ -529,18 +554,23 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             }
             Dialog::Extract => {
                 let count = app.active_ids().map_or(0, |(i, _)| app.views[i].target_pages().len());
-                ui.label(egui::RichText::new("Extract pages").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Extract pages")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
-                ui.label(format!("{count} page{} selected.", if count == 1 { "" } else { "s" }));
-                ui.checkbox(&mut app.extract_draft.delete, "Delete pages after extracting");
-                ui.checkbox(&mut app.extract_draft.separate, "Extract pages as separate files");
+                let selected_text = if app.language == crate::i18n::Language::Fr {
+                    format!("{count} page{} sélectionnée{}.", if count == 1 { "" } else { "s" }, if count == 1 { "" } else { "s" })
+                } else {
+                    format!("{count} page{} selected.", if count == 1 { "" } else { "s" })
+                };
+                ui.label(selected_text);
+                ui.checkbox(&mut app.extract_draft.delete, app.language.tr("Delete pages after extracting"));
+                ui.checkbox(&mut app.extract_draft.separate, app.language.tr("Extract pages as separate files"));
                 ui.add_space(12.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if widgets::pill_button(ui, "Extract", true).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Extract"), true).clicked() {
                         extract_now = true;
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -550,70 +580,73 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 use printcraft_engine::{PageOrientation as O, PageParity as P};
                 let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
                 let d = &mut app.rotate_draft;
-                ui.label(egui::RichText::new("Rotate Pages").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Rotate Pages")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 egui::Grid::new("rotate-pages").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
-                    ui.label("Direction:");
+                    ui.label(app.language.tr("Direction:"));
+                    let dir_key = match d.degrees {
+                        270 => "Counterclockwise 90 degrees",
+                        180 => "180 degrees",
+                        _ => "Clockwise 90 degrees",
+                    };
                     egui::ComboBox::from_id_salt("rotate-dir")
-                        .selected_text(match d.degrees {
-                            270 => "Counterclockwise 90 degrees",
-                            180 => "180 degrees",
-                            _ => "Clockwise 90 degrees",
-                        })
+                        .selected_text(app.language.tr(dir_key))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut d.degrees, 90, "Clockwise 90 degrees");
-                            ui.selectable_value(&mut d.degrees, 270, "Counterclockwise 90 degrees");
-                            ui.selectable_value(&mut d.degrees, 180, "180 degrees");
+                            ui.selectable_value(&mut d.degrees, 90, app.language.tr("Clockwise 90 degrees"));
+                            ui.selectable_value(&mut d.degrees, 270, app.language.tr("Counterclockwise 90 degrees"));
+                            ui.selectable_value(&mut d.degrees, 180, app.language.tr("180 degrees"));
                         });
                     ui.end_row();
-                    ui.label("Pages:");
+                    ui.label(app.language.tr("Pages:"));
                     ui.vertical(|ui| {
-                        ui.radio_value(&mut d.which, 0, "All");
-                        ui.radio_value(&mut d.which, 1, "Selection");
+                        ui.radio_value(&mut d.which, 0, app.language.tr("All"));
+                        ui.radio_value(&mut d.which, 1, app.language.tr("Selection"));
                         ui.horizontal(|ui| {
-                            ui.radio_value(&mut d.which, 2, "From");
+                            ui.radio_value(&mut d.which, 2, app.language.tr("From"));
                             ui.add_enabled(d.which == 2, egui::DragValue::new(&mut d.from).range(1..=n));
-                            ui.label("to");
+                            ui.label(app.language.tr("to"));
                             ui.add_enabled(d.which == 2, egui::DragValue::new(&mut d.to).range(1..=n));
-                            ui.label(format!("of {n}"));
+                            ui.label(format!("{} {n}", app.language.tr("of")));
                         });
                     });
                     ui.end_row();
-                    ui.label("Rotate:");
+                    ui.label(app.language.tr("Rotate:"));
+                    let parity_key = match d.parity {
+                        P::Both => "Even and Odd Pages",
+                        P::Even => "Even Pages Only",
+                        P::Odd => "Odd Pages Only",
+                    };
                     egui::ComboBox::from_id_salt("rotate-parity")
-                        .selected_text(match d.parity {
-                            P::Both => "Even and Odd Pages",
-                            P::Even => "Even Pages Only",
-                            P::Odd => "Odd Pages Only",
-                        })
+                        .selected_text(app.language.tr(parity_key))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut d.parity, P::Both, "Even and Odd Pages");
-                            ui.selectable_value(&mut d.parity, P::Even, "Even Pages Only");
-                            ui.selectable_value(&mut d.parity, P::Odd, "Odd Pages Only");
+                            ui.selectable_value(&mut d.parity, P::Both, app.language.tr("Even and Odd Pages"));
+                            ui.selectable_value(&mut d.parity, P::Even, app.language.tr("Even Pages Only"));
+                            ui.selectable_value(&mut d.parity, P::Odd, app.language.tr("Odd Pages Only"));
                         });
                     ui.end_row();
                     ui.label("");
+                    let orient_key = match d.orientation {
+                        O::Both => "Landscape and Portrait Pages",
+                        O::Landscape => "Landscape Pages",
+                        O::Portrait => "Portrait Pages",
+                    };
                     egui::ComboBox::from_id_salt("rotate-orient")
-                        .selected_text(match d.orientation {
-                            O::Both => "Landscape and Portrait Pages",
-                            O::Landscape => "Landscape Pages",
-                            O::Portrait => "Portrait Pages",
-                        })
+                        .selected_text(app.language.tr(orient_key))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut d.orientation, O::Both, "Landscape and Portrait Pages");
-                            ui.selectable_value(&mut d.orientation, O::Landscape, "Landscape Pages");
-                            ui.selectable_value(&mut d.orientation, O::Portrait, "Portrait Pages");
+                            ui.selectable_value(&mut d.orientation, O::Both, app.language.tr("Landscape and Portrait Pages"));
+                            ui.selectable_value(&mut d.orientation, O::Landscape, app.language.tr("Landscape Pages"));
+                            ui.selectable_value(&mut d.orientation, O::Portrait, app.language.tr("Portrait Pages"));
                         });
                     ui.end_row();
                 });
                 d.to = d.to.max(d.from);
                 ui.add_space(12.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if widgets::pill_button(ui, "OK", true).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("OK"), true).clicked() {
                         rotate_now = true;
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -625,26 +658,31 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                     close = true;
                     return;
                 };
-                ui.label(egui::RichText::new("Duplicate Field").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Duplicate Field")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
-                ui.label(format!("Duplicate \"{}\" onto:", d.name));
-                ui.radio_value(&mut d.all, true, "All pages");
+                let dup_text = if app.language == crate::i18n::Language::Fr {
+                    format!("Dupliquer « {} » sur :", d.name)
+                } else {
+                    format!("Duplicate \"{}\" onto:", d.name)
+                };
+                ui.label(dup_text);
+                ui.radio_value(&mut d.all, true, app.language.tr("All pages"));
                 ui.horizontal(|ui| {
-                    ui.radio_value(&mut d.all, false, "From");
+                    ui.radio_value(&mut d.all, false, app.language.tr("From"));
                     ui.add_enabled(!d.all, egui::DragValue::new(&mut d.from).range(1..=n));
-                    ui.label("to");
+                    ui.label(app.language.tr("to"));
                     ui.add_enabled(!d.all, egui::DragValue::new(&mut d.to).range(1..=n));
-                    ui.label(format!("of {n}"));
+                    ui.label(format!("{} {n}", app.language.tr("of")));
                 });
                 d.to = d.to.max(d.from);
                 ui.add_space(12.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if widgets::pill_button(ui, "OK", true).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("OK"), true).clicked() {
                         let pages: Vec<usize> = if d.all { (0..n).collect() } else { (d.from - 1..d.to.min(n)).collect() };
                         duplicate_now = Some(Edit::DuplicateField { name: d.name.clone(), pages });
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -693,13 +731,13 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::SummarizeComments => {
-                ui.label(egui::RichText::new("Summarize Options").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Summarize Options")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
-                ui.label("Choose a layout:");
-                let _ = ui.radio(true, "Comments only");
+                ui.label(app.language.tr("Choose a layout:"));
+                let _ = ui.radio(true, app.language.tr("Comments only"));
                 ui.add_space(6.0);
                 ui.horizontal(|ui| {
-                    ui.label("Sort comments by:");
+                    ui.label(app.language.tr("Sort comments by:"));
                     egui::ComboBox::from_id_salt("summary-sort").selected_text(app.summary_sort.name()).show_ui(ui, |ui| {
                         for s in printcraft_engine::SummarySort::ALL {
                             ui.selectable_value(&mut app.summary_sort, s, s.name());
@@ -708,11 +746,11 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 });
                 ui.add_space(12.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if widgets::pill_button(ui, "Create PDF Comment Summary", true).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Create PDF Comment Summary"), true).clicked() {
                         summarize_now = true;
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -720,16 +758,16 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             }
             Dialog::Revert => {
                 let name = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.name.clone()).unwrap_or_default();
-                ui.label(egui::RichText::new("Revert").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Revert")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 ui.label(format!("Revert to the previously saved version of \"{name}\"? Changes since then can't be undone afterwards."));
                 ui.add_space(12.0);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if widgets::pill_button(ui, "Revert", true).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Revert"), true).clicked() {
                         revert_now = true;
                         close = true;
                     }
-                    if widgets::pill_button(ui, "Cancel", false).clicked() {
+                    if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                         close = true;
                     }
                 });
@@ -745,13 +783,13 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 let labels: Vec<String> = doc.info.pages.iter().map(|p| p.label.clone()).collect();
                 let thumbs: std::collections::HashMap<usize, egui::TextureId> =
                     (0..sizes.len()).filter_map(|p| app.views[i].thumb_id(p).map(|t| (p, t))).collect();
-                let (go, cancel) = crate::print_ui::body(ui, &mut app.print_draft, &t, &sizes, &labels, &|p| thumbs.get(&p).copied());
+                let (go, cancel) = crate::print_ui::body(ui, &mut app.print_draft, &t, &sizes, &labels, &|p| thumbs.get(&p).copied(), app.language);
                 print_go = go;
                 close = go || cancel;
                 return;
             }
             Dialog::RemoveHidden => {
-                let (ok, cancel) = crate::redact_ui::hidden_body(ui, &mut app.hidden_draft, &t);
+                let (ok, cancel) = crate::redact_ui::hidden_body(ui, &mut app.hidden_draft, &t, app.language);
                 if ok {
                     redact_now = Some(dialog);
                 }
@@ -759,7 +797,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::Sanitize => {
-                let (ok, cancel) = crate::redact_ui::sanitize_body(ui, &t);
+                let (ok, cancel) = crate::redact_ui::sanitize_body(ui, &t, app.language);
                 if ok {
                     redact_now = Some(dialog);
                 }
@@ -783,7 +821,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 return;
             }
             Dialog::Signature => {
-                let (apply, cancel) = crate::fill_sign::signature_pad(ui, &t, &mut app.signature_draft, &mut app.signature_preview);
+                let (apply, cancel) = crate::fill_sign::signature_pad(ui, &t, &mut app.signature_draft, &mut app.signature_preview, app.language);
                 if apply {
                     let d = std::mem::take(&mut app.signature_draft);
                     let tool = if d.initials {
@@ -889,7 +927,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             }
             Dialog::NumberPages => {
                 use printcraft_engine::LabelStyle as L;
-                ui.label(egui::RichText::new("Number pages").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Number pages")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 let Some((_, id)) = app.active_ids() else { return };
                 let n = app.session.get(id).map(|d| d.info.pages.len()).unwrap_or(1).max(1);
@@ -906,15 +944,15 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                         .inner
                 };
                 egui::Grid::new("number_pages").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
-                    ui.label("Pages");
+                    ui.label(app.language.tr("Pages"));
                     ui.horizontal(|ui| {
                         ui.add(egui::DragValue::new(&mut d.from).range(1..=n));
-                        ui.label("to");
+                        ui.label(app.language.tr("to"));
                         ui.add(egui::DragValue::new(&mut d.to).range(1..=n));
-                        ui.label(egui::RichText::new(format!("of {n}")).color(t.text_muted));
+                        ui.label(egui::RichText::new(format!("{} {n}", app.language.tr("of"))).color(t.text_muted));
                     });
                     ui.end_row();
-                    ui.label("Style");
+                    ui.label(app.language.tr("Style"));
                     let styles = [
                         (L::Decimal, "1, 2, 3"),
                         (L::LowerRoman, "i, ii, iii"),
@@ -930,11 +968,11 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                         }
                     });
                     ui.end_row();
-                    let l = ui.label("Prefix");
+                    let l = ui.label(app.language.tr("Prefix"));
                     boxed(ui, &mut |ui| ui.add(egui::TextEdit::singleline(&mut d.prefix).desired_width(160.0).frame(egui::Frame::NONE)))
                         .labelled_by(l.id);
                     ui.end_row();
-                    ui.label("Start");
+                    ui.label(app.language.tr("Start"));
                     ui.add(egui::DragValue::new(&mut d.start).range(1..=99_999));
                     ui.end_row();
                 });
@@ -946,16 +984,21 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 } else {
                     format!("{}, {} … {}", label(d.start), label(d.start + 1), label(d.start + (d.to - d.from) as u32))
                 };
-                ui.label(egui::RichText::new(format!("Labels: {preview}. Later pages keep their labels.")).color(t.text_muted));
+                let labels_text = if app.language == crate::i18n::Language::Fr {
+                    format!("Étiquettes : {preview}. Les pages suivantes conservent leurs étiquettes.")
+                } else {
+                    format!("Labels: {preview}. Later pages keep their labels.")
+                };
+                ui.label(egui::RichText::new(labels_text).color(t.text_muted));
                 number_now = Some(Edit::NumberPages { from: d.from - 1, to: d.to - 1, style: d.style, prefix: d.prefix.clone(), first: d.start });
             }
             Dialog::Recovery => {
                 ui.horizontal(|ui| {
                     ui.add(crate::icons::image("clock-3", 22.0, t.accent));
-                    ui.label(egui::RichText::new("Recover unsaved documents?").font(theme::semibold(18.0)));
+                    ui.label(egui::RichText::new(app.language.tr("Recover unsaved documents?")).font(theme::semibold(18.0)));
                 });
                 ui.add_space(6.0);
-                ui.label("PrintCraft didn't shut down normally. These documents had changes that were autosaved:");
+                ui.label(app.language.tr("PrintCraft didn't shut down normally. These documents had changes that were autosaved:"));
                 ui.add_space(8.0);
                 let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
                 egui::Grid::new("recoverable").num_columns(2).spacing([18.0, 6.0]).show(ui, |ui| {
@@ -963,25 +1006,51 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                         ui.label(egui::RichText::new(&m.name).font(theme::medium(13.0)));
                         let mins = now.saturating_sub(m.saved_at) / 60;
                         let when = match mins {
-                            0 => "just now".to_string(),
-                            1..=59 => format!("{mins} min ago"),
-                            _ => format!("{} h ago", mins / 60),
+                            0 => {
+                                if app.language == crate::i18n::Language::Fr {
+                                    "à l'instant".to_string()
+                                } else {
+                                    "just now".to_string()
+                                }
+                            }
+                            1..=59 => {
+                                if app.language == crate::i18n::Language::Fr {
+                                    format!("il y a {mins} min")
+                                } else {
+                                    format!("{mins} min ago")
+                                }
+                            }
+                            _ => {
+                                if app.language == crate::i18n::Language::Fr {
+                                    format!("il y a {} h", mins / 60)
+                                } else {
+                                    format!("{} h ago", mins / 60)
+                                }
+                            }
                         };
-                        let lock = if m.encrypted { " · password-protected" } else { "" };
+                        let lock = if m.encrypted {
+                            if app.language == crate::i18n::Language::Fr {
+                                " · protégé par mot de passe"
+                            } else {
+                                " · password-protected"
+                            }
+                        } else {
+                            ""
+                        };
                         ui.label(egui::RichText::new(format!("{when}{lock}")).color(t.text_muted));
                         ui.end_row();
                     }
                 });
             }
             Dialog::Shortcuts => {
-                ui.label(egui::RichText::new("Keyboard shortcuts").font(theme::semibold(18.0)));
+                ui.label(egui::RichText::new(app.language.tr("Keyboard shortcuts")).font(theme::semibold(18.0)));
                 ui.add_space(8.0);
                 let mac = cfg!(target_os = "macos") || cfg!(target_arch = "wasm32");
                 // Registered commands first (always in sync with the real bindings), then the
                 // keys the document view handles itself.
                 let mut rows: Vec<(String, String)> = printcraft_engine::commands::COMMANDS
                     .iter()
-                    .filter_map(|c| c.shortcut.map(|k| (k.label(mac), c.label.trim_end_matches('…').to_string())))
+                    .filter_map(|c| c.shortcut.map(|k| (k.label(mac), app.language.tr(c.label.trim_end_matches('…')).to_string())))
                     .collect();
                 for (k, v) in [
                     ("⌘G / ⇧⌘G", "Next / previous match"),
@@ -999,7 +1068,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                     ("Delete", "Delete selected pages (Organize)"),
                     ("⌘A", "Select all pages (Organize)"),
                 ] {
-                    rows.push((k.to_string(), v.to_string()));
+                    rows.push((k.to_string(), app.language.tr(v).to_string()));
                 }
                 egui::ScrollArea::vertical().max_height(460.0).show(ui, |ui| {
                     egui::Grid::new("keys").num_columns(2).spacing([24.0, 6.0]).show(ui, |ui| {
@@ -1020,7 +1089,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                     });
                 });
                 ui.add_space(6.0);
-                ui.label("A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.");
+                ui.label(app.language.tr("A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0."));
                 ui.label(
                     egui::RichText::new(
                         "Rendering: hayro (bootstrap) · UI: egui · Icons: Lucide (ISC) · Fonts: Inter, JetBrains Mono, Dancing Script (OFL)",
@@ -1030,7 +1099,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                 );
                 ui.add_space(12.0);
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new("Part of").color(t.text_muted));
+                    ui.label(egui::RichText::new(app.language.tr("Part of")).color(t.text_muted));
                     widgets::artcraft_logo(ui, 16.0);
                 });
                 ui.add_space(6.0);
@@ -1043,39 +1112,39 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
         let changed = draft_changes(app).is_some_and(|c| !c.is_empty());
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             if dialog == Dialog::Recovery {
-                if widgets::pill_button(ui, "Recover", true).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("Recover"), true).clicked() {
                     recover = Some(true);
                     close = true;
                 }
-                if widgets::pill_button(ui, "Discard", false).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("Discard"), false).clicked() {
                     recover = Some(false);
                     close = true;
                 }
             } else if dialog == Dialog::NumberPages {
-                if widgets::pill_button(ui, "OK", true).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("OK"), true).clicked() {
                     apply_number = true;
                     close = true;
                 }
-                if widgets::pill_button(ui, "Cancel", false).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                     close = true;
                 }
             } else if dialog == Dialog::Split {
-                if ui.add_enabled_ui(split_ready.is_some(), |ui| widgets::pill_button(ui, "Split", true)).inner.clicked() {
+                if ui.add_enabled_ui(split_ready.is_some(), |ui| widgets::pill_button(ui, &app.language.tr("Split"), true)).inner.clicked() {
                     split_now = split_ready.clone();
                     close = true;
                 }
-                if widgets::pill_button(ui, "Cancel", false).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                     close = true;
                 }
             } else if changed {
-                if widgets::pill_button(ui, "OK", true).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("OK"), true).clicked() {
                     apply = true;
                     close = true;
                 }
-                if widgets::pill_button(ui, "Cancel", false).clicked() {
+                if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                     close = true;
                 }
-            } else if widgets::pill_button(ui, "Close", true).clicked() {
+            } else if widgets::pill_button(ui, &app.language.tr("Close"), true).clicked() {
                 close = true;
             }
         });
@@ -1289,20 +1358,25 @@ fn save_prompt(app: &mut PrintCraftApp, ctx: &egui::Context) {
         ui.set_width(420.0);
         ui.horizontal(|ui| {
             ui.add(crate::icons::image("save", 22.0, t.accent));
-            ui.label(egui::RichText::new(format!("Save changes to “{name}” before closing?")).font(theme::semibold(16.0)));
+            let title_text = if app.language == crate::i18n::Language::Fr {
+                format!("Enregistrer les modifications de « {name} » avant de fermer ?")
+            } else {
+                format!("Save changes to “{name}” before closing?")
+            };
+            ui.label(egui::RichText::new(title_text).font(theme::semibold(16.0)));
         });
         ui.add_space(6.0);
-        ui.label(egui::RichText::new("Your changes will be lost if you don't save them.").color(t.text_muted));
+        ui.label(egui::RichText::new(app.language.tr("Your changes will be lost if you don't save them.")).color(t.text_muted));
         ui.add_space(14.0);
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if widgets::pill_button(ui, "Save", true).clicked() {
+            if widgets::pill_button(ui, &app.language.tr("Save"), true).clicked() {
                 choice = Some(Some(true));
             }
-            if widgets::pill_button(ui, "Cancel", false).clicked() {
+            if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                 choice = Some(None);
             }
             ui.add_space(24.0);
-            if widgets::pill_button(ui, "Don't save", false).clicked() {
+            if widgets::pill_button(ui, &app.language.tr("Don't save"), false).clicked() {
                 choice = Some(Some(false));
             }
         });
@@ -1329,12 +1403,17 @@ fn password(app: &mut PrintCraftApp, ctx: &egui::Context) {
         ui.set_width(400.0);
         ui.horizontal(|ui| {
             ui.add(crate::icons::image("lock", 22.0, t.accent));
-            ui.label(egui::RichText::new("Password required").font(theme::semibold(17.0)));
+            ui.label(egui::RichText::new(app.language.tr("Password required")).font(theme::semibold(17.0)));
         });
         ui.add_space(6.0);
-        ui.label(format!("“{}” is protected. Enter a password to open it.", prompt.name));
+        let desc_text = if app.language == crate::i18n::Language::Fr {
+            format!("« {} » est protégé. Entrez un mot de passe pour l'ouvrir.", prompt.name)
+        } else {
+            format!("“{}” is protected. Enter a password to open it.", prompt.name)
+        };
+        ui.label(desc_text);
         ui.add_space(8.0);
-        let r = ui.add(egui::TextEdit::singleline(&mut prompt.input).password(true).hint_text("Password").desired_width(f32::INFINITY));
+        let r = ui.add(egui::TextEdit::singleline(&mut prompt.input).password(true).hint_text(app.language.tr("Password")).desired_width(f32::INFINITY));
         // Enter submits. The field keeps focus (we request it every frame), so check the key
         // while it is focused as well as on the frame focus is lost.
         if (r.has_focus() || r.lost_focus()) && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
@@ -1347,10 +1426,10 @@ fn password(app: &mut PrintCraftApp, ctx: &egui::Context) {
         }
         ui.add_space(12.0);
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if widgets::pill_button(ui, "Open", true).clicked() {
+            if widgets::pill_button(ui, &app.language.tr("Open"), true).clicked() {
                 submit = true;
             }
-            if widgets::pill_button(ui, "Cancel", false).clicked() {
+            if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
                 cancel = true;
             }
         });

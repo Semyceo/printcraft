@@ -903,6 +903,17 @@ impl PrintCraftApp {
         }
     }
 
+    /// Follow the system locale until the user picks a language. `saved` is the settings JSON
+    /// passed to `restore`; a valid saved language always wins over the locale.
+    pub fn adopt_system_language(&mut self, saved: Option<&str>, locale: Option<&str>) {
+        let chosen = saved
+            .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+            .is_some_and(|v| serde_json::from_value::<i18n::Language>(v["language"].clone()).is_ok());
+        if !chosen && let Some(locale) = locale {
+            self.language = i18n::Language::from_locale(locale);
+        }
+    }
+
     /// `true` while any open document still waits for page renders (used by headless capture).
     pub fn render_pending(&self) -> bool {
         self.views.iter().any(|v| v.render_pending())
@@ -915,7 +926,7 @@ impl PrintCraftApp {
         let view = self.active.and_then(|i| self.views.get_mut(i));
         match (key, view) {
             ("language", _) => {
-                self.language = i18n::Language::parse(value).ok_or("language must be en or ja")?;
+                self.language = i18n::Language::parse(value).ok_or("language must be en, fr or ja")?;
             }
             ("theme", _) => {
                 self.follow_system_theme = value == "system";

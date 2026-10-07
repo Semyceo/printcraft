@@ -44,26 +44,26 @@ impl PageRange {
             .collect()
     }
 
-    pub(crate) fn ui(&mut self, ui: &mut egui::Ui, count: usize) {
+    pub(crate) fn ui(&mut self, ui: &mut egui::Ui, count: usize, lang: crate::i18n::Language) {
         ui.horizontal(|ui| {
-            ui.radio_value(&mut self.all, true, "All pages");
-            ui.radio_value(&mut self.all, false, "Pages from");
+            ui.radio_value(&mut self.all, true, lang.tr("All pages"));
+            ui.radio_value(&mut self.all, false, lang.tr("Pages from"));
             ui.add_enabled(!self.all, egui::DragValue::new(&mut self.from).range(1..=count.max(1)));
-            ui.label("to");
+            ui.label(lang.tr("to"));
             if self.to == 1 && self.from == 1 {
                 self.to = count.max(1);
             }
             ui.add_enabled(!self.all, egui::DragValue::new(&mut self.to).range(1..=count.max(1)));
-            ui.label("Subset");
-            let label = match self.subset {
+            ui.label(lang.tr("Subset"));
+            let label_key = match self.subset {
                 Subset::All => "All pages in range",
                 Subset::Even => "Even pages only",
                 Subset::Odd => "Odd pages only",
             };
-            egui::ComboBox::from_id_salt("mark-subset").selected_text(label).show_ui(ui, |ui| {
-                ui.selectable_value(&mut self.subset, Subset::All, "All pages in range");
-                ui.selectable_value(&mut self.subset, Subset::Even, "Even pages only");
-                ui.selectable_value(&mut self.subset, Subset::Odd, "Odd pages only");
+            egui::ComboBox::from_id_salt("mark-subset").selected_text(lang.tr(label_key)).show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.subset, Subset::All, lang.tr("All pages in range"));
+                ui.selectable_value(&mut self.subset, Subset::Even, lang.tr("Even pages only"));
+                ui.selectable_value(&mut self.subset, Subset::Odd, lang.tr("Odd pages only"));
             });
         });
     }
@@ -291,8 +291,8 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
         }
     }
     ui.add_space(8.0);
-    ui.label(egui::RichText::new("Page Range Options").font(theme::semibold(12.5)));
-    d.range.ui(ui, count);
+    ui.label(egui::RichText::new(app.language.tr("Page Range Options")).font(theme::semibold(12.5)));
+    d.range.ui(ui, count, app.language);
     ui.add_space(8.0);
     // Preview of the current page.
     let hf = d.hf.clone();
@@ -382,10 +382,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
             }
             MarkKind::Background => !d.use_file || d.file.is_some(),
         } && !d.range.pages(count).is_empty();
-        if ui.add_enabled_ui(ready, |ui| widgets::pill_button(ui, "OK", true)).inner.clicked() {
+        if ui.add_enabled_ui(ready, |ui| widgets::pill_button(ui, &app.language.tr("OK"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, "Cancel", false).clicked() {
+        if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

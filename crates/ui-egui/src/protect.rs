@@ -92,17 +92,18 @@ fn radio(ui: &mut egui::Ui, t: &Tokens, on: bool, label: &str) -> egui::Response
 /// Draw the dialog body; returns (apply, cancel).
 pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (bool, bool) {
     use printcraft_engine::Algorithm as A;
+    let lang = app.language;
     let d = &mut app.protect_draft;
-    ui.label(egui::RichText::new("Protect Using Password").font(theme::semibold(18.0)));
+    ui.label(egui::RichText::new(lang.tr("Protect Using Password")).font(theme::semibold(18.0)));
     ui.add_space(4.0);
     ui.separator();
     ui.add_space(6.0);
-    ui.label("Requires user to enter a password for:");
+    ui.label(lang.tr("Requires user to enter a password for:"));
     ui.add_space(4.0);
-    if radio(ui, t, d.viewing, "Viewing").clicked() {
+    if radio(ui, t, d.viewing, &lang.tr("Viewing")).clicked() {
         d.viewing = true;
     }
-    if radio(ui, t, !d.viewing, "Editing").clicked() {
+    if radio(ui, t, !d.viewing, &lang.tr("Editing")).clicked() {
         d.viewing = false;
     }
     ui.add_space(10.0);
@@ -118,24 +119,24 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
             })
             .inner
     };
-    let r = field(ui, "Type Password", &mut d.password, "protect-pw");
+    let r = field(ui, &lang.tr("Type Password"), &mut d.password, "protect-pw");
     if r.changed() || !d.password.is_empty() {
         let (s, c) = strength(&d.password);
         if !d.password.is_empty() {
-            ui.label(egui::RichText::new(format!("Strength: {s}")).font(theme::medium(11.5)).color(c));
+            ui.label(egui::RichText::new(format!("{}: {}", lang.tr("Strength"), lang.tr(s))).font(theme::medium(11.5)).color(c));
         }
     }
     ui.add_space(6.0);
-    field(ui, "Re-type Password", &mut d.confirm, "protect-pw2");
+    field(ui, &lang.tr("Re-type Password"), &mut d.confirm, "protect-pw2");
     ui.add_space(6.0);
     let chevron = if d.advanced { "⌃" } else { "⌄" };
-    if ui.add(egui::Button::new(egui::RichText::new(format!("Advanced Options {chevron}")).font(theme::semibold(13.0))).frame(false)).clicked() {
+    if ui.add(egui::Button::new(egui::RichText::new(format!("{} {chevron}", lang.tr("Advanced Options"))).font(theme::semibold(13.0))).frame(false)).clicked() {
         d.advanced = !d.advanced;
     }
     if d.advanced {
         let p = &mut d.protection;
         egui::Grid::new("protect-advanced").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
-            ui.label("Compatibility");
+            ui.label(lang.tr("Compatibility"));
             let algos = [
                 (A::Aes256, "Acrobat X and later (256-bit AES)"),
                 (A::Aes128, "Acrobat 7.0 and later (128-bit AES)"),
@@ -149,17 +150,17 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                 }
             });
             ui.end_row();
-            ui.label("Encrypt");
+            ui.label(lang.tr("Encrypt"));
             ui.vertical(|ui| {
-                ui.radio_value(&mut p.encrypt_metadata, true, "All document contents");
+                ui.radio_value(&mut p.encrypt_metadata, true, lang.tr("All document contents"));
                 // Unencrypted metadata needs crypt filters (Acrobat 6.0 and later).
                 ui.add_enabled_ui(p.algorithm != A::Rc4_40 && p.algorithm != A::Rc4_128, |ui| {
-                    ui.radio_value(&mut p.encrypt_metadata, false, "All document contents except metadata");
+                    ui.radio_value(&mut p.encrypt_metadata, false, lang.tr("All document contents except metadata"));
                 });
             });
             ui.end_row();
             if !d.viewing {
-                ui.label("Printing allowed");
+                ui.label(lang.tr("Printing allowed"));
                 let opts = [(Printing::None, "None"), (Printing::Low, "Low Resolution (150 dpi)"), (Printing::High, "High Resolution")];
                 let cur = opts.iter().find(|(o, _)| *o == p.printing).map_or("High Resolution", |(_, l)| *l);
                 egui::ComboBox::from_id_salt("protect-print").width(300.0).selected_text(cur).show_ui(ui, |ui| {
@@ -168,7 +169,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                     }
                 });
                 ui.end_row();
-                ui.label("Changes allowed");
+                ui.label(lang.tr("Changes allowed"));
                 let opts = [
                     (Changes::None, "None"),
                     (Changes::Pages, "Inserting, deleting, and rotating pages"),
@@ -185,8 +186,8 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                 ui.end_row();
                 ui.label("");
                 ui.vertical(|ui| {
-                    ui.checkbox(&mut p.copy, "Enable copying of text, images, and other content");
-                    ui.checkbox(&mut p.accessibility, "Enable text access for screen reader devices for the visually impaired");
+                    ui.checkbox(&mut p.copy, lang.tr("Enable copying of text, images, and other content"));
+                    ui.checkbox(&mut p.accessibility, lang.tr("Enable text access for screen reader devices for the visually impaired"));
                 });
                 ui.end_row();
             }
@@ -212,10 +213,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     let (mut apply, mut cancel) = (false, false);
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let ok = d.problem().is_none();
-        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, "Apply", true)).inner.clicked() {
+        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Apply"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, "Cancel", false).clicked() {
+        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });
