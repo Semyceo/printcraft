@@ -891,24 +891,34 @@ mod tests {
         assert_eq!(Language::from_locale("-_."), Language::En);
 
         let mut first_run = crate::PrintCraftApp::default();
-        first_run.adopt_system_language(None, Some("fr-FR"));
+        first_run.adopt_system_language(Some("fr-FR"));
         assert_eq!(first_run.language, Language::Fr);
 
         let mut no_locale = crate::PrintCraftApp::default();
-        no_locale.adopt_system_language(None, None);
+        no_locale.adopt_system_language(None);
         assert_eq!(no_locale.language, Language::En);
 
-        let mut chosen = crate::PrintCraftApp::default();
-        chosen.restore(r#"{"language":"en"}"#);
-        chosen.adopt_system_language(Some(r#"{"language":"en"}"#), Some("fr-FR"));
-        assert_eq!(chosen.language, Language::En);
-
-        let mut older_settings = crate::PrintCraftApp::default();
-        older_settings.adopt_system_language(Some(r#"{"theme":"Dark"}"#), Some("fr-FR"));
-        assert_eq!(older_settings.language, Language::Fr);
+        // 0.2.1 saved "en" for everyone, chosen or not.
+        let mut from_0_2_1 = crate::PrintCraftApp::default();
+        from_0_2_1.restore(r#"{"language":"en","theme":"Light"}"#);
+        from_0_2_1.adopt_system_language(Some("fr-FR"));
+        assert_eq!(from_0_2_1.language, Language::Fr);
 
         let mut corrupt = crate::PrintCraftApp::default();
-        corrupt.adopt_system_language(Some("{not json"), Some("fr-FR"));
+        corrupt.restore("{not json");
+        corrupt.adopt_system_language(Some("fr-FR"));
         assert_eq!(corrupt.language, Language::Fr);
+
+        let mut picked = crate::PrintCraftApp::default();
+        picked.set_option("language", "en").unwrap();
+        let mut relaunched = crate::PrintCraftApp::default();
+        relaunched.restore(&picked.persist());
+        relaunched.adopt_system_language(Some("fr-FR"));
+        assert_eq!(relaunched.language, Language::En);
+
+        let mut bad_marker = crate::PrintCraftApp::default();
+        bad_marker.restore(r#"{"language":"xx","language_chosen":true}"#);
+        bad_marker.adopt_system_language(Some("fr-FR"));
+        assert_eq!(bad_marker.language, Language::Fr);
     }
 }

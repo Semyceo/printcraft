@@ -92,11 +92,10 @@ fn main() -> eframe::Result {
         native,
         Box::new(move |cc| {
             let mut app = PrintCraftApp::new();
-            let saved = cc.storage.and_then(|s| s.get_string("printcraft"));
-            if let Some(json) = &saved {
-                app.restore(json);
+            if let Some(json) = cc.storage.and_then(|s| s.get_string("printcraft")) {
+                app.restore(&json);
             }
-            app.adopt_system_language(saved.as_deref(), sys_locale::get_locale().as_deref());
+            app.adopt_system_language(sys_locale::get_locale().as_deref());
             app.integrated_titlebar = integrated;
             app.update_source = Some(std::sync::Arc::new(updates::latest_release));
             app.keychain_ids = cfg!(target_os = "macos");

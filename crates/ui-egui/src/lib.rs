@@ -296,6 +296,9 @@ pub struct PrintCraftApp {
     pub comment_prefs: comments::CommentPrefs,
     pub theme: ThemeKind,
     pub language: i18n::Language,
+    /// The user picked `language` (Preferences or `--language`). Until then the app follows the
+    /// system locale; settings from 0.2.1 and earlier always saved `"en"`, so that alone isn't a choice.
+    pub language_chosen: bool,
     /// Follow the operating system's light/dark setting.
     pub follow_system_theme: bool,
     pub dialog: Option<Dialog>,
@@ -472,6 +475,7 @@ impl PrintCraftApp {
             comment_prefs: Default::default(),
             theme: ThemeKind::Light,
             language: i18n::Language::default(),
+            language_chosen: false,
             follow_system_theme: false,
             dialog: None,
             update_source: None,
@@ -843,6 +847,7 @@ impl PrintCraftApp {
             "recent": self.recent,
             "theme": self.theme,
             "language": self.language,
+            "language_chosen": self.language_chosen,
             "author": self.comment_prefs.author,
             // Drawn signatures keep their original form (older settings read the same).
             "signature": match &self.signature { Some(fill_sign::SavedSig::Drawn(s)) => Some(s), _ => None },
@@ -872,6 +877,7 @@ impl PrintCraftApp {
         }
         if let Ok(language) = serde_json::from_value::<i18n::Language>(v["language"].clone()) {
             self.language = language;
+            self.language_chosen = v["language_chosen"].as_bool().unwrap_or(false);
         }
         // An empty or missing name keeps the login-name default; settings are untrusted, so the
         // name is cut to a sane length.
@@ -903,13 +909,11 @@ impl PrintCraftApp {
         }
     }
 
-    /// Follow the system locale until the user picks a language. `saved` is the settings JSON
-    /// passed to `restore`; a valid saved language always wins over the locale.
-    pub fn adopt_system_language(&mut self, saved: Option<&str>, locale: Option<&str>) {
-        let chosen = saved
-            .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
-            .is_some_and(|v| serde_json::from_value::<i18n::Language>(v["language"].clone()).is_ok());
-        if !chosen && let Some(locale) = locale {
+    /// Follow the system locale (`fr-FR`, …) until the user picks a language. Call after `restore`.
+    pub fn adopt_system_language(&mut self, locale: Option<&str>) {
+        if !self.language_chosen
+            && let Some(locale) = locale
+        {
             self.language = i18n::Language::from_locale(locale);
         }
     }
@@ -927,6 +931,7 @@ impl PrintCraftApp {
         match (key, view) {
             ("language", _) => {
                 self.language = i18n::Language::parse(value).ok_or("language must be en, fr or ja")?;
+                self.language_chosen = true;
             }
             ("theme", _) => {
                 self.follow_system_theme = value == "system";

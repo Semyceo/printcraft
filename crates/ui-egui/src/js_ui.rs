@@ -236,7 +236,9 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
         ui.label(app.language.tr("Interface language"));
         egui::ComboBox::from_id_salt("interface-language").selected_text(app.language.name()).show_ui(ui, |ui| {
             for language in crate::i18n::Language::ALL {
-                ui.selectable_value(&mut app.language, language, language.name());
+                if ui.selectable_value(&mut app.language, language, language.name()).clicked() {
+                    app.language_chosen = true;
+                }
             }
         });
     });
