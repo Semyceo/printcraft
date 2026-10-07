@@ -42,11 +42,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                 ui.horizontal(|ui| {
                     ui.add(icons::image("file-text", 16.0, t.icon));
                     ui.add(egui::Label::new(&f.name).truncate());
-                    let p_text = if lang == crate::i18n::Language::Fr {
-                        format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" })
-                    } else {
-                        format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" })
-                    };
+                    let p_text = format!("{} page{}", f.pages, if f.pages == 1 { "" } else { "s" });
                     ui.label(egui::RichText::new(p_text).small().color(t.text_faint));
                 });
                 let hover_txt = if lang == crate::i18n::Language::Fr {

@@ -91,13 +91,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
         ui.horizontal(|ui| {
             ui.label(lang.tr("Exclude images smaller than"));
             let label = |n: u32| {
-                if n == 0 {
-                    lang.tr("No limit").to_string()
-                } else if lang == crate::i18n::Language::Fr {
-                    format!("{n} pixels")
-                } else {
-                    format!("{n} pixels")
-                }
+                if n == 0 { lang.tr("No limit").to_string() } else { format!("{n} pixels") }
             };
             egui::ComboBox::from_id_salt("export-min").selected_text(label(d.min_side)).show_ui(ui, |ui| {
                 for n in [0, 16, 32, 64, 128, 256] {

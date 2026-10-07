@@ -798,6 +798,7 @@ fn pages(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, view: &crate::DocView, n
 
 /// The Fields panel: fields by page, in tab order. While preparing a form, each field can move
 /// earlier or later in its page's tab order (Acrobat: Order Tabs Manually).
+#[allow(clippy::too_many_arguments)]
 fn fields(
     ui: &mut egui::Ui,
     t: &Tokens,
