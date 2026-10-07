@@ -46,9 +46,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
     for spec in printcraft_engine::commands::COMMANDS {
         let label = printcraft_engine::commands::current_label(spec, &app.session, active);
         let tr_label = app.language.tr(&label);
-        let s = score(&tr_label, &q)
-            .or_else(|| score(&label, &q))
-            .or_else(|| score(spec.id, &q).map(|s| s + 50));
+        let s = score(tr_label, &q).or_else(|| score(&label, &q)).or_else(|| score(spec.id, &q).map(|s| s + 50));
         if let Some(s) = s {
             let detail = spec.shortcut.map(|k| k.label(mac)).unwrap_or_else(|| {
                 let m = spec.menu.unwrap_or("Command");
@@ -56,20 +54,13 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
             });
             hits.push((
                 s,
-                Hit {
-                    group: None,
-                    label: tr_label.to_string(),
-                    detail,
-                    icon: spec.icon,
-                    command: Some(spec.id),
-                    ready: app.command_enabled(spec),
-                },
+                Hit { group: None, label: tr_label.to_string(), detail, icon: spec.icon, command: Some(spec.id), ready: app.command_enabled(spec) },
             ));
         }
     }
     for g in TOOL_GROUPS {
         let tr_g_label = app.language.tr(g.label);
-        if let Some(s) = score(&tr_g_label, &q).or_else(|| score(g.label, &q)) {
+        if let Some(s) = score(tr_g_label, &q).or_else(|| score(g.label, &q)) {
             hits.push((
                 s,
                 Hit {
@@ -88,9 +79,7 @@ pub fn show(app: &mut PrintCraftApp, ctx: &egui::Context) {
                     continue; // listed above as a command
                 }
                 let tr_item_label = app.language.tr(i.label);
-                let s = score(&tr_item_label, &q)
-                    .or_else(|| score(i.label, &q))
-                    .or_else(|| score(i.command, &q).map(|s| s + 50));
+                let s = score(tr_item_label, &q).or_else(|| score(i.label, &q)).or_else(|| score(i.command, &q).map(|s| s + 50));
                 if let Some(s) = s {
                     hits.push((
                         s + 1,

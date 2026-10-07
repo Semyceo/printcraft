@@ -14,7 +14,9 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
         egui::Frame::NONE.inner_margin(egui::Margin { left: 36, right: 36, top: 28, bottom: 28 }).show(ui, |ui| {
             ui.label(egui::RichText::new(app.language.tr("Welcome to PrintCraft")).font(theme::semibold(24.0)));
             ui.label(
-                egui::RichText::new(app.language.tr("An open-source PDF workbench — local, private, and scriptable.")).color(t.text_muted).font(theme::regular(14.0)),
+                egui::RichText::new(app.language.tr("An open-source PDF workbench — local, private, and scriptable."))
+                    .color(t.text_muted)
+                    .font(theme::regular(14.0)),
             );
             ui.add_space(14.0);
             egui::Frame::NONE
@@ -28,7 +30,10 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                         widgets::artcraft_mark(ui, 28.0);
                         ui.vertical(|ui| {
                             ui.label(egui::RichText::new(app.language.tr("Join the ArtCraft community")).font(theme::semibold(15.0)));
-                            ui.label(egui::RichText::new(app.language.tr("Get help, share feedback and follow development on Discord.")).color(t.text_muted));
+                            ui.label(
+                                egui::RichText::new(app.language.tr("Get help, share feedback and follow development on Discord."))
+                                    .color(t.text_muted),
+                            );
                         });
                     });
                     ui.add_space(8.0);
@@ -53,7 +58,7 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                             let Some(g) = catalog::group(id) else { continue };
                             let tr_g_label = app.language.tr(g.label);
                             let (rect, resp) = ui.allocate_exact_size(vec2(190.0, 104.0), Sense::click());
-                            resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &tr_g_label));
+                            resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, tr_g_label));
                             let fill = if resp.hovered() { t.hover } else { t.card };
                             ui.painter().rect(rect, CornerRadius::same(10), fill, Stroke::new(1.0, t.divider), egui::StrokeKind::Inside);
                             let color = egui::Color32::from_rgb(g.hue[0], g.hue[1], g.hue[2]);
@@ -80,7 +85,7 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                         }
                         let (rect, resp) = ui.allocate_exact_size(vec2(170.0, 104.0), Sense::click());
                         let open_file_str = app.language.tr("Open file");
-                        resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &open_file_str));
+                        resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, open_file_str));
                         ui.painter().rect(
                             rect,
                             CornerRadius::same(10),
@@ -100,7 +105,10 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
             ui.label(egui::RichText::new(app.language.tr("Recent")).font(theme::semibold(17.0)));
             ui.add_space(8.0);
             if app.recent.is_empty() {
-                ui.label(egui::RichText::new(app.language.tr("Files you open in PrintCraft appear here. Drop a PDF anywhere to open it.")).color(t.text_muted));
+                ui.label(
+                    egui::RichText::new(app.language.tr("Files you open in PrintCraft appear here. Drop a PDF anywhere to open it."))
+                        .color(t.text_muted),
+                );
             }
             let mut open = None;
             for r in &app.recent {
@@ -139,10 +147,12 @@ pub fn show(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                 }
             }
             ui.add_space(20.0);
-            widgets::section_title(ui, &app.language.tr("Privacy"));
+            widgets::section_title(ui, app.language.tr("Privacy"));
             ui.label(
-                egui::RichText::new(app.language.tr("PrintCraft works offline. No telemetry, no account, and no cloud processing unless you add a provider."))
-                    .color(t.text_muted),
+                egui::RichText::new(
+                    app.language.tr("PrintCraft works offline. No telemetry, no account, and no cloud processing unless you add a provider."),
+                )
+                .color(t.text_muted),
             );
         });
     });

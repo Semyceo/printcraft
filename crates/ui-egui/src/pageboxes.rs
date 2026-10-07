@@ -208,10 +208,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     ui.add_space(12.0);
     let (mut apply, mut cancel) = (false, false);
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-        if widgets::pill_button(ui, &lang.tr("OK"), true).clicked() {
+        if widgets::pill_button(ui, lang.tr("OK"), true).clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

@@ -168,7 +168,7 @@ pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Token
     let run_btn = app.language.tr("Run");
     let close_btn = app.language.tr("Close");
     let clear_btn = app.language.tr("Clear");
-    match buttons(ui, &run_btn, &[&close_btn, &clear_btn]).as_deref() {
+    match buttons(ui, run_btn, &[close_btn, clear_btn]).as_deref() {
         Some(b) if b == run_btn => app.run_console(),
         Some(b) if b == clear_btn => app.js_console.log.clear(),
         Some(b) if b == close_btn => return true,
@@ -210,7 +210,7 @@ pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
     let save_btn = app.language.tr("Save");
     let close_btn = app.language.tr("Close");
     let delete_btn = app.language.tr("Delete");
-    let close = match buttons(ui, &save_btn, &[&close_btn, &delete_btn]).as_deref() {
+    let close = match buttons(ui, save_btn, &[close_btn, delete_btn]).as_deref() {
         Some(b) if b == save_btn && !name.is_empty() => {
             edit = Some(Edit::SetDocumentScript { name, script: Some(app.doc_js.script.clone()) });
             false
@@ -266,5 +266,5 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &T
     });
     ui.add_space(10.0);
     let ok_btn = app.language.tr("OK");
-    buttons(ui, &ok_btn, &[]).is_some()
+    buttons(ui, ok_btn, &[]).is_some()
 }

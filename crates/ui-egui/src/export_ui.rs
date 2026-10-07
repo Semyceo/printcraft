@@ -120,10 +120,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
     let (mut apply, mut cancel) = (false, false);
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let ok = !d.range.pages(count).is_empty();
-        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Export"), true)).inner.clicked() {
+        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, lang.tr("Export"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

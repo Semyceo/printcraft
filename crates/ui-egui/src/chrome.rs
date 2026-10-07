@@ -25,7 +25,7 @@ pub fn tab_strip(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 4.0;
                 let home_tip = app.language.tr("Home");
-                if icons::button(ui, "house", 28.0, app.active.is_none(), &home_tip).clicked() {
+                if icons::button(ui, "house", 28.0, app.active.is_none(), home_tip).clicked() {
                     app.active = None;
                 }
                 let mut close = None;
@@ -40,7 +40,7 @@ pub fn tab_strip(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                     app.request_close_tab(i);
                 }
                 ui.add_space(4.0);
-                if widgets::ghost_button(ui, "plus", &app.language.tr("Open")).on_hover_text(app.language.tr("Open a PDF (⌘O)")).clicked() {
+                if widgets::ghost_button(ui, "plus", app.language.tr("Open")).on_hover_text(app.language.tr("Open a PDF (⌘O)")).clicked() {
                     app.open_dialog();
                 }
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -48,12 +48,12 @@ pub fn tab_strip(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                         ThemeKind::Light => ("moon", ThemeKind::Dark, app.language.tr("Dark gray theme")),
                         ThemeKind::Dark => ("sun", ThemeKind::Light, app.language.tr("Light theme")),
                     };
-                    if icons::button(ui, icon, 28.0, false, &tip).clicked() {
+                    if icons::button(ui, icon, 28.0, false, tip).clicked() {
                         let ctx = ui.ctx().clone();
                         app.set_theme(&ctx, next);
                     }
                     let shortcuts_tip = app.language.tr("Keyboard shortcuts");
-                    if icons::button(ui, "circle-help", 28.0, false, &shortcuts_tip).clicked() {
+                    if icons::button(ui, "circle-help", 28.0, false, shortcuts_tip).clicked() {
                         app.dialog = Some(Dialog::Shortcuts);
                     }
                     // One click to the community, from anywhere in the app.
@@ -120,7 +120,7 @@ pub fn mode_bar(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                 for (mode, label) in
                     [(Mode::AllTools, "All tools"), (Mode::Read, "Read"), (Mode::Edit, "Edit"), (Mode::Convert, "Convert"), (Mode::Sign, "E-Sign")]
                 {
-                    if widgets::mode_tab(ui, &app.language.tr(label), app.mode == mode).clicked() {
+                    if widgets::mode_tab(ui, app.language.tr(label), app.mode == mode).clicked() {
                         app.mode = mode;
                         app.left_open = true;
                         app.left = match mode {
@@ -136,20 +136,20 @@ pub fn mode_bar(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                     let has_doc = app.active.is_some();
                     ui.add_enabled_ui(has_doc, |ui| {
                         let print_tip = app.language.tr("Print (⌘P)");
-                        if icons::button(ui, "printer", 32.0, false, &print_tip).clicked() {
+                        if icons::button(ui, "printer", 32.0, false, print_tip).clicked() {
                             app.run_command("print.dialog");
                         }
                         let save_tip = app.language.tr("Save (⌘S)");
-                        if icons::button(ui, "save", 32.0, false, &save_tip).clicked() {
+                        if icons::button(ui, "save", 32.0, false, save_tip).clicked() {
                             app.run_command("file.save");
                         }
                         let props_tip = app.language.tr("Document properties (⌘D)");
-                        if icons::button(ui, "info", 32.0, false, &props_tip).clicked() {
+                        if icons::button(ui, "info", 32.0, false, props_tip).clicked() {
                             app.dialog = Some(Dialog::Properties(PropsTab::Description));
                         }
                     });
                     ui.add_space(8.0);
-                    if widgets::search_box(ui, &app.language.tr("Find tools and commands"), 260.0).clicked() {
+                    if widgets::search_box(ui, app.language.tr("Find tools and commands"), 260.0).clicked() {
                         app.palette_open = true;
                     }
                 });
@@ -218,7 +218,10 @@ fn main_menu(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
                         v.goto = Some((v.current, 0.0));
                     }
                 }
-                if ui.add_enabled(v.layout == PageLayout::TwoUp, egui::Checkbox::new(&mut v.cover, language.tr("Show cover page in two-page view"))).changed() {
+                if ui
+                    .add_enabled(v.layout == PageLayout::TwoUp, egui::Checkbox::new(&mut v.cover, language.tr("Show cover page in two-page view")))
+                    .changed()
+                {
                     v.goto = Some((v.current, 0.0));
                 }
                 ui.separator();
@@ -285,7 +288,7 @@ pub fn right_rail(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
             let mut rail_button = |ui: &mut egui::Ui, panel: RightPanel, icon: &str, tip: &str, has: bool| {
                 let selected = app.right == Some(panel);
                 let tip_tr = app.language.tr(tip);
-                let r = icons::button(ui, icon, 34.0, selected, &tip_tr);
+                let r = icons::button(ui, icon, 34.0, selected, tip_tr);
                 if has && !selected {
                     let c = r.rect.right_top() + vec2(-8.0, 8.0);
                     ui.painter().circle_filled(c, 3.0, t.accent);
@@ -310,31 +313,31 @@ pub fn right_rail(app: &mut PrintCraftApp, ui: &mut egui::Ui) {
             ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
                 ui.spacing_mut().item_spacing.y = 2.0;
                 let zoom_out_tip = app.language.tr("Zoom out (⌘−)");
-                if icons::button(ui, "zoom-out", 32.0, false, &zoom_out_tip).clicked() {
+                if icons::button(ui, "zoom-out", 32.0, false, zoom_out_tip).clicked() {
                     view.zoom_step(false);
                 }
                 let zoom_in_tip = app.language.tr("Zoom in (⌘+)");
-                if icons::button(ui, "zoom-in", 32.0, false, &zoom_in_tip).clicked() {
+                if icons::button(ui, "zoom-in", 32.0, false, zoom_in_tip).clicked() {
                     view.zoom_step(true);
                 }
                 let rot_tip = app.language.tr("Rotate view clockwise (⇧⌘+)");
-                if icons::button(ui, "rotate-cw", 32.0, false, &rot_tip).clicked() {
+                if icons::button(ui, "rotate-cw", 32.0, false, rot_tip).clicked() {
                     view.rotate_view(true);
                 }
                 let fit_icon = if view.fit == Fit::Width { "maximize" } else { "columns-2" };
                 let fit_tip = app.language.tr("Toggle fit page / fit width");
-                if icons::button(ui, fit_icon, 32.0, false, &fit_tip).clicked() {
+                if icons::button(ui, fit_icon, 32.0, false, fit_tip).clicked() {
                     view.fit = if view.fit == Fit::Width { Fit::Page } else { Fit::Width };
                     view.goto = Some((view.current, 0.0));
                 }
                 ui.label(egui::RichText::new(format!("{:.0}%", view.zoom * 100.0)).font(theme::regular(10.5)).color(t.text_faint));
                 ui.add_space(6.0);
                 let next_p_tip = app.language.tr("Next page");
-                if icons::button(ui, "chevron-down", 30.0, false, &next_p_tip).clicked() {
+                if icons::button(ui, "chevron-down", 30.0, false, next_p_tip).clicked() {
                     view.step_page(true);
                 }
                 let prev_p_tip = app.language.tr("Previous page");
-                if icons::button(ui, "chevron-up", 30.0, false, &prev_p_tip).clicked() {
+                if icons::button(ui, "chevron-up", 30.0, false, prev_p_tip).clicked() {
                     view.step_page(false);
                 }
                 ui.label(egui::RichText::new(page_count.to_string()).font(theme::regular(11.0)).color(t.text_muted));

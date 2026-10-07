@@ -50,23 +50,18 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
                 } else {
                     format!("Pages of {} to combine, e.g. 1-3, 6", f.name)
                 };
-                ui.add_sized([120.0, 22.0], egui::TextEdit::singleline(&mut f.range).hint_text(lang.tr("All pages")))
-                    .on_hover_text(hover_txt);
+                ui.add_sized([120.0, 22.0], egui::TextEdit::singleline(&mut f.range).hint_text(lang.tr("All pages"))).on_hover_text(hover_txt);
                 ui.horizontal(|ui| {
                     let up_tip = lang.tr("Move up");
-                    if ui.add_enabled_ui(i > 0, |ui| icons::button(ui, "chevron-up", 24.0, false, &up_tip)).inner.clicked() {
+                    if ui.add_enabled_ui(i > 0, |ui| icons::button(ui, "chevron-up", 24.0, false, up_tip)).inner.clicked() {
                         action = Some(RowAction::Up(i));
                     }
                     let down_tip = lang.tr("Move down");
-                    if ui.add_enabled_ui(i + 1 < n, |ui| icons::button(ui, "chevron-down", 24.0, false, &down_tip)).inner.clicked() {
+                    if ui.add_enabled_ui(i + 1 < n, |ui| icons::button(ui, "chevron-down", 24.0, false, down_tip)).inner.clicked() {
                         action = Some(RowAction::Down(i));
                     }
                 });
-                let rm_tip = if lang == crate::i18n::Language::Fr {
-                    format!("Supprimer {}", f.name)
-                } else {
-                    format!("Remove {}", f.name)
-                };
+                let rm_tip = if lang == crate::i18n::Language::Fr { format!("Supprimer {}", f.name) } else { format!("Remove {}", f.name) };
                 if icons::button(ui, "trash-2", 24.0, false, &rm_tip).clicked() {
                     action = Some(RowAction::Remove(i));
                 }
@@ -85,21 +80,16 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     ui.add_space(10.0);
     let (mut go, mut cancel) = (false, false);
     ui.horizontal(|ui| {
-        if widgets::pill_button(ui, &lang.tr("Add files…"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Add files…"), false).clicked() {
             app.combine_dialog();
         }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             let ok = app.combine_draft.len() >= 2;
-            let dis_tip = if lang == crate::i18n::Language::Fr {
-                "Ajoutez au moins deux fichiers"
-            } else {
-                "Add at least two files"
-            };
-            if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Combine"), true)).inner.on_disabled_hover_text(dis_tip).clicked()
-            {
+            let dis_tip = if lang == crate::i18n::Language::Fr { "Ajoutez au moins deux fichiers" } else { "Add at least two files" };
+            if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, lang.tr("Combine"), true)).inner.on_disabled_hover_text(dis_tip).clicked() {
                 go = true;
             }
-            if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+            if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
                 cancel = true;
             }
         });

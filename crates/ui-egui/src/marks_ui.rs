@@ -382,10 +382,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens, kind:
             }
             MarkKind::Background => !d.use_file || d.file.is_some(),
         } && !d.range.pages(count).is_empty();
-        if ui.add_enabled_ui(ready, |ui| widgets::pill_button(ui, &app.language.tr("OK"), true)).inner.clicked() {
+        if ui.add_enabled_ui(ready, |ui| widgets::pill_button(ui, app.language.tr("OK"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, &app.language.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, app.language.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

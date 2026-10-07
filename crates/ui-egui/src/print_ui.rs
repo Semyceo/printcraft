@@ -234,11 +234,7 @@ pub(crate) fn body(
                 egui::ComboBox::from_id_salt("printer").selected_text(shown).width(260.0).show_ui(ui, |ui| {
                     for p in &d.printers {
                         let label = if p.default {
-                            if lang == crate::i18n::Language::Fr {
-                                format!("{} (par défaut)", p.name)
-                            } else {
-                                format!("{} (default)", p.name)
-                            }
+                            if lang == crate::i18n::Language::Fr { format!("{} (par défaut)", p.name) } else { format!("{} (default)", p.name) }
                         } else {
                             p.name.clone()
                         };
@@ -259,7 +255,11 @@ pub(crate) fn body(
                     ui,
                     "duplex",
                     &mut d.duplex,
-                    &[(spool::Duplex::Off, lang.tr("Off")), (spool::Duplex::LongEdge, lang.tr("Flip on long edge")), (spool::Duplex::ShortEdge, lang.tr("Flip on short edge"))],
+                    &[
+                        (spool::Duplex::Off, lang.tr("Off")),
+                        (spool::Duplex::LongEdge, lang.tr("Flip on long edge")),
+                        (spool::Duplex::ShortEdge, lang.tr("Flip on short edge")),
+                    ],
                     160.0,
                 );
                 ui.end_row();
@@ -286,24 +286,20 @@ pub(crate) fn body(
                 }
             });
             ui.horizontal(|ui| {
-                let more_opt_label = if lang == crate::i18n::Language::Fr {
-                    "Plus d'options :"
-                } else {
-                    "More options:"
-                };
+                let more_opt_label = if lang == crate::i18n::Language::Fr { "Plus d'options :" } else { "More options:" };
                 ui.label(more_opt_label);
                 combo(
                     ui,
                     "subset",
                     &mut d.subset,
-                    &[(Subset::All, lang.tr("All pages in range")), (Subset::Odd, lang.tr("Odd pages only")), (Subset::Even, lang.tr("Even pages only"))],
+                    &[
+                        (Subset::All, lang.tr("All pages in range")),
+                        (Subset::Odd, lang.tr("Odd pages only")),
+                        (Subset::Even, lang.tr("Even pages only")),
+                    ],
                     150.0,
                 );
-                let rev_label = if lang == crate::i18n::Language::Fr {
-                    "Inverser les pages"
-                } else {
-                    "Reverse pages"
-                };
+                let rev_label = if lang == crate::i18n::Language::Fr { "Inverser les pages" } else { "Reverse pages" };
                 ui.checkbox(&mut d.reverse, rev_label);
             });
             ui.add_space(6.0);

@@ -325,10 +325,10 @@ pub(crate) fn signature_pad(
     let title = if d.initials { lang.tr("Create initials") } else { lang.tr("Create signature") };
     ui.label(egui::RichText::new(title).font(crate::theme::semibold(18.0)));
     ui.horizontal(|ui| {
-        if crate::widgets::pill_button(ui, &lang.tr("Type"), !d.drawing).clicked() {
+        if crate::widgets::pill_button(ui, lang.tr("Type"), !d.drawing).clicked() {
             d.drawing = false;
         }
-        if crate::widgets::pill_button(ui, &lang.tr("Draw"), d.drawing).clicked() {
+        if crate::widgets::pill_button(ui, lang.tr("Draw"), d.drawing).clicked() {
             d.drawing = true;
         }
     });
@@ -397,10 +397,10 @@ fn pad_buttons(ui: &mut egui::Ui, d: &mut SigDraft, lang: crate::i18n::Language)
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let ready = d.ready();
-            if ui.add_enabled_ui(ready, |ui| crate::widgets::pill_button(ui, &lang.tr("Apply"), true)).inner.clicked() {
+            if ui.add_enabled_ui(ready, |ui| crate::widgets::pill_button(ui, lang.tr("Apply"), true)).inner.clicked() {
                 apply = true;
             }
-            if crate::widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+            if crate::widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
                 cancel = true;
             }
         });

@@ -100,10 +100,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     ui.add_space(6.0);
     ui.label(lang.tr("Requires user to enter a password for:"));
     ui.add_space(4.0);
-    if radio(ui, t, d.viewing, &lang.tr("Viewing")).clicked() {
+    if radio(ui, t, d.viewing, lang.tr("Viewing")).clicked() {
         d.viewing = true;
     }
-    if radio(ui, t, !d.viewing, &lang.tr("Editing")).clicked() {
+    if radio(ui, t, !d.viewing, lang.tr("Editing")).clicked() {
         d.viewing = false;
     }
     ui.add_space(10.0);
@@ -119,7 +119,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
             })
             .inner
     };
-    let r = field(ui, &lang.tr("Type Password"), &mut d.password, "protect-pw");
+    let r = field(ui, lang.tr("Type Password"), &mut d.password, "protect-pw");
     if r.changed() || !d.password.is_empty() {
         let (s, c) = strength(&d.password);
         if !d.password.is_empty() {
@@ -127,10 +127,13 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
         }
     }
     ui.add_space(6.0);
-    field(ui, &lang.tr("Re-type Password"), &mut d.confirm, "protect-pw2");
+    field(ui, lang.tr("Re-type Password"), &mut d.confirm, "protect-pw2");
     ui.add_space(6.0);
     let chevron = if d.advanced { "⌃" } else { "⌄" };
-    if ui.add(egui::Button::new(egui::RichText::new(format!("{} {chevron}", lang.tr("Advanced Options"))).font(theme::semibold(13.0))).frame(false)).clicked() {
+    if ui
+        .add(egui::Button::new(egui::RichText::new(format!("{} {chevron}", lang.tr("Advanced Options"))).font(theme::semibold(13.0))).frame(false))
+        .clicked()
+    {
         d.advanced = !d.advanced;
     }
     if d.advanced {
@@ -213,10 +216,10 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PrintCraftApp, t: &Tokens) -> (b
     let (mut apply, mut cancel) = (false, false);
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         let ok = d.problem().is_none();
-        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, &lang.tr("Apply"), true)).inner.clicked() {
+        if ui.add_enabled_ui(ok, |ui| widgets::pill_button(ui, lang.tr("Apply"), true)).inner.clicked() {
             apply = true;
         }
-        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
             cancel = true;
         }
     });

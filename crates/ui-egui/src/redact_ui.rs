@@ -210,16 +210,12 @@ pub(crate) fn pages_body(ui: &mut egui::Ui, d: &mut PagesDraft, pages: usize, _t
         ui.add_enabled(!d.current, egui::DragValue::new(&mut d.from).range(1..=pages));
         ui.label(lang.tr("to"));
         ui.add_enabled(!d.current, egui::DragValue::new(&mut d.to).range(1..=pages));
-        let of_label = if lang == crate::i18n::Language::Fr {
-            format!("sur {pages}")
-        } else {
-            format!("of {pages}")
-        };
+        let of_label = if lang == crate::i18n::Language::Fr { format!("sur {pages}") } else { format!("of {pages}") };
         ui.label(of_label);
     });
     d.to = d.to.max(d.from);
     ui.add_space(12.0);
-    buttons(ui, &lang.tr("OK"), true, lang)
+    buttons(ui, lang.tr("OK"), true, lang)
 }
 
 /// Find text and redact. Returns (search, cancel).
@@ -260,7 +256,7 @@ pub(crate) fn search_body(ui: &mut egui::Ui, d: &mut SearchDraft, t: &Tokens, la
         ui.label(egui::RichText::new(match_msg).color(t.text_muted));
     }
     ui.add_space(12.0);
-    let (go, cancel) = buttons(ui, &lang.tr("Mark all"), true, lang);
+    let (go, cancel) = buttons(ui, lang.tr("Mark all"), true, lang);
     (go || enter, cancel)
 }
 
@@ -270,19 +266,11 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, la
     ui.label(egui::RichText::new(lang.tr("Redaction Tool Properties")).font(crate::theme::semibold(18.0)));
     ui.add_space(8.0);
     egui::Grid::new("redact-props").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-        let fill_col_label = if lang == crate::i18n::Language::Fr {
-            "Couleur de remplissage de la zone :"
-        } else {
-            "Redacted area fill colour:"
-        };
+        let fill_col_label = if lang == crate::i18n::Language::Fr { "Couleur de remplissage de la zone :" } else { "Redacted area fill colour:" };
         ui.label(fill_col_label);
         ui.horizontal(|ui| {
             let mut none = d.fill.is_none();
-            let no_col_label = if lang == crate::i18n::Language::Fr {
-                "Sans couleur"
-            } else {
-                "No colour"
-            };
+            let no_col_label = if lang == crate::i18n::Language::Fr { "Sans couleur" } else { "No colour" };
             if ui.checkbox(&mut none, no_col_label).changed() {
                 d.fill = if none { None } else { Some([0.0, 0.0, 0.0]) };
             }
@@ -294,11 +282,7 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, la
         }
         ui.end_row();
         ui.label("");
-        let overlay_label = if lang == crate::i18n::Language::Fr {
-            "Utiliser un texte de superposition"
-        } else {
-            "Use overlay text"
-        };
+        let overlay_label = if lang == crate::i18n::Language::Fr { "Utiliser un texte de superposition" } else { "Use overlay text" };
         ui.checkbox(&mut d.use_overlay, overlay_label);
         ui.end_row();
         let l = ui.label(lang.tr("Custom text:"));
@@ -333,11 +317,7 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, la
             });
         });
         ui.end_row();
-        let font_col_label = if lang == crate::i18n::Language::Fr {
-            "Couleur de police :"
-        } else {
-            "Font colour:"
-        };
+        let font_col_label = if lang == crate::i18n::Language::Fr { "Couleur de police :" } else { "Font colour:" };
         ui.label(font_col_label);
         ui.add_enabled_ui(on, |ui| {
             if let Some(c) = crate::comments::swatch_grid(ui, Some(look.color)) {
@@ -346,18 +326,10 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, la
         });
         ui.end_row();
         ui.label("");
-        let rep_label = if lang == crate::i18n::Language::Fr {
-            "Répéter le texte de superposition"
-        } else {
-            "Repeat overlay text"
-        };
+        let rep_label = if lang == crate::i18n::Language::Fr { "Répéter le texte de superposition" } else { "Repeat overlay text" };
         ui.add_enabled(on, egui::Checkbox::new(&mut look.repeat, rep_label));
         ui.end_row();
-        let align_label = if lang == crate::i18n::Language::Fr {
-            "Alignement du texte :"
-        } else {
-            "Text alignment:"
-        };
+        let align_label = if lang == crate::i18n::Language::Fr { "Alignement du texte :" } else { "Text alignment:" };
         ui.label(align_label);
         ui.add_enabled_ui(on, |ui| {
             ui.horizontal(|ui| {
@@ -369,7 +341,7 @@ pub(crate) fn props_body(ui: &mut egui::Ui, d: &mut RedactPrefs, _t: &Tokens, la
         ui.end_row();
     });
     ui.add_space(12.0);
-    buttons(ui, &lang.tr("OK"), true, lang)
+    buttons(ui, lang.tr("OK"), true, lang)
 }
 
 /// Apply redactions confirmation. Returns (apply, cancel).
@@ -397,7 +369,7 @@ pub(crate) fn apply_body(ui: &mut egui::Ui, marks: usize, t: &Tokens, lang: crat
     };
     ui.label(egui::RichText::new(save_hint).small().color(t.text_muted));
     ui.add_space(12.0);
-    buttons(ui, &lang.tr("Apply"), true, lang)
+    buttons(ui, lang.tr("Apply"), true, lang)
 }
 
 fn buttons(ui: &mut egui::Ui, ok: &str, primary: bool, lang: crate::i18n::Language) -> (bool, bool) {
@@ -406,7 +378,7 @@ fn buttons(ui: &mut egui::Ui, ok: &str, primary: bool, lang: crate::i18n::Langua
         if widgets::pill_button(ui, ok, primary).clicked() {
             a = true;
         }
-        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
             c = true;
         }
     });
@@ -448,11 +420,7 @@ pub(crate) fn hidden_body(ui: &mut egui::Ui, d: &mut HiddenDraft, t: &Tokens, la
                 ui.checkbox(on, lang.tr(h.label()));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let count_str = if *n == 0 {
-                        if lang == crate::i18n::Language::Fr {
-                            "Aucun trouvé".to_string()
-                        } else {
-                            "None found".to_string()
-                        }
+                        if lang == crate::i18n::Language::Fr { "Aucun trouvé".to_string() } else { "None found".to_string() }
                     } else {
                         n.to_string()
                     };
@@ -472,15 +440,11 @@ pub(crate) fn hidden_body(ui: &mut egui::Ui, d: &mut HiddenDraft, t: &Tokens, la
     let any = d.found.iter().any(|f| f.2 && f.1 > 0);
     let (mut a, mut c) = (false, false);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let rem_label = if lang == crate::i18n::Language::Fr {
-            "Supprimer"
-        } else {
-            "Remove"
-        };
+        let rem_label = if lang == crate::i18n::Language::Fr { "Supprimer" } else { "Remove" };
         if ui.add_enabled_ui(any && total > 0, |ui| widgets::pill_button(ui, rem_label, true)).inner.clicked() {
             a = true;
         }
-        if widgets::pill_button(ui, &lang.tr("Cancel"), false).clicked() {
+        if widgets::pill_button(ui, lang.tr("Cancel"), false).clicked() {
             c = true;
         }
     });
@@ -506,10 +470,6 @@ pub(crate) fn sanitize_body(ui: &mut egui::Ui, t: &Tokens, lang: crate::i18n::La
     };
     ui.label(egui::RichText::new(save_hint).small().color(t.text_muted));
     ui.add_space(12.0);
-    let san_btn = if lang == crate::i18n::Language::Fr {
-        "Nettoyer"
-    } else {
-        "Sanitize"
-    };
+    let san_btn = if lang == crate::i18n::Language::Fr { "Nettoyer" } else { "Sanitize" };
     buttons(ui, san_btn, true, lang)
 }
